@@ -3,7 +3,7 @@ const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const cors = require('cors')
-
+const mediasoup = require("mediasoup");
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {  cors: {
@@ -33,3 +33,4 @@ io.on("connection", (socket) => {
 app.use(require('./middlewares/errorHandler'))
 const port = process.env.port || 5000
 httpServer.listen(port,()=>{console.log(`server run on port ${port}`)});
+
