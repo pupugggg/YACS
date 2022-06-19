@@ -1,12 +1,10 @@
 import './App.css'
-import { io } from 'socket.io-client'
-import { useEffect, useState } from 'react'
-import Peer from 'simple-peer'
-import { Box } from '@mui/material'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import SignInSide from './components/Login'
 import RegisterSide from './components/Register'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
+import Room from './components/Room'
+import DashBoard from './components/DashBoard'
 const theme = createTheme({
     palette: {
         mode: 'dark',
@@ -33,33 +31,15 @@ const theme = createTheme({
     },
 })
 function App() {
-    const [s, setS] = useState(null)
-    useEffect(() => {
-        const socket = io('http://localhost:5000')
-        setS(socket)
-        socket.emit('join', 'r1')
-        socket.on('joined', (room, socketID) => {
-            console.log('joined', room, socketID)
-        })
-        socket.on('leave', (room, socketID) => {
-            console.log('leave', room, socketID)
-        })
-
-        socket.on('disconnect', (reason) => {
-            console.log(reason)
-        })
-        return () => {
-            socket.emit('leave', 'r1')
-        }
-    }, [])
     return (
         <ThemeProvider theme={theme}>
             <Router>
                 <Routes>
                     <Route path="/login" element={<SignInSide />} />
                     <Route path="/register" element={<RegisterSide />} />
-                    <Route path="*" element={<SignInSide />} />
-                    <Route path="/room/:id" element={<SignInSide />} />
+                    <Route path="/room/:id" element={<Room />} />
+                    <Route path="/dashboard" element={<DashBoard />} />
+                    <Route path="*" element={<DashBoard />} />
                 </Routes>
             </Router>
         </ThemeProvider>

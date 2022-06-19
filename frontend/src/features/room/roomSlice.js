@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import { createRoom } from './extraReducers'
+import { createRoom } from './Reducers'
 const initialState = {
     roomId: null,
     me: null,

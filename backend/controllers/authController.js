@@ -11,4 +11,8 @@ const register = asyncHandler(async(req,res)=>{
     res.json(result)
 })
 
-module.exports = {login,register}
+const getMe = asyncHandler(async(req,res)=>{
+    res.json({token:req.token})
+})
+
+module.exports = {login,register,getMe}
