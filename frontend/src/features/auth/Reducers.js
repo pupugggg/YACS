@@ -51,5 +51,5 @@ export const getMe = createAsyncThunk(
     }
 )
 export const logout = ()=>{
-    logoutService()
+    localStorage.removeItem('user')
 } 

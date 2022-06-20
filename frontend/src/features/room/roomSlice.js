@@ -1,13 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import { createRoom } from './Reducers'
+import { createRoom,getRoomsFromUser } from './Reducers'
 const initialState = {
-    roomId: null,
-    me: null,
-    members: [],
+    rooms:[],
+    room:null,
     isError: false,
     isLoading: false,
     isSuccess: false,
-    massage: '',
+    message: '',
 }
 export const roomSlice = createSlice({
     name: 'room',
@@ -17,23 +16,36 @@ export const roomSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(createRoom.pending, (state) => {
-                state.isError = false
-                state.isLoading = true
-                state.isSuccess = false
-            })
-            .addCase(createRoom.rejected, (state, action) => {
-                state.isError = true
+        .addMatcher(
+            (action) =>action.type.startsWith('room') &&  action.type.endsWith('/fulfilled'),
+            (state, action) => {
                 state.isLoading = false
+                state.isError = false
+                state.isSuccess = true
+                state.message = ''
+                state.room = action.payload.room
+                state.rooms = action.payload.rooms
+            }
+        )
+        .addMatcher(
+            (action) => action.type.startsWith('room') && action.type.endsWith('/pending'),
+            (state) => {
+                state.isLoading = true
+                state.isError = false
+                state.isSuccess = false
+            }
+        )
+        .addMatcher(
+            (action) => action.type.startsWith('room') && action.type.endsWith('/rejected'),
+            (state, action) => {
+                state.isLoading = false
+                state.isError = true
                 state.isSuccess = false
                 state.message = action.payload
-            })
-            .addCase(createRoom.fulfilled, (state, action) => {
-                state.isError = false
-                state.isLoading = false
-                state.isSuccess = true
-                state.products = action.payload
-            })
+                state.room = null
+                state.rooms = []
+            }
+        )
     },
 })
 

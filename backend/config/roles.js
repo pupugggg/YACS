@@ -1,6 +1,5 @@
 const role = {
-    owner:0,
-    member:1,
-    admin:2,
+    member:0,
+    admin:1,
 }
-module.exports = {role}
+module.exports = role

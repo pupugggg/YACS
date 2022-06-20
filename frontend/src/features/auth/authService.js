@@ -10,9 +10,6 @@ export async function registerService(userData) {
     return response.data
 }
 
-export async function logoutService() {
-    localStorage.removeItem('user')
-}
 export async function getMeService(token) {
     const config = {
         headers:{

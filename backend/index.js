@@ -19,8 +19,8 @@ async function main() {
     app.use(express.urlencoded({extended:false}))
     app.use(express.json())
     app.use(cors())
-    app.use(require('./routes/roomRoute'))
     app.use(require('./routes/authRoute'))
+    app.use(require('./routes/roomRoute'))
     io.on('connection', (socket) => {
         console.log(socket.id, 'connected')
         socket.on('join', (room) => {
