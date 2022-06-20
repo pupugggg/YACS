@@ -1,5 +1,4 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { logout as logoutReducer } from './Reducers'
 
 const user = JSON.parse(localStorage.getItem('user'))
 const initialState = {
@@ -16,15 +15,17 @@ export const authSlice = createSlice({
     reducers: {
         reset: (state) => initialState,
         logout: (state) => {
-            logoutReducer()
-            state = initialState
+            localStorage.removeItem('user')
+            state.user = null
             return state
         },
     },
     extraReducers: (builder) => {
         builder
             .addMatcher(
-                (action) => action.type.startsWith('auth') &&action.type.endsWith('/fulfilled'),
+                (action) =>
+                    action.type.startsWith('auth') &&
+                    action.type.endsWith('/fulfilled'),
                 (state, action) => {
                     state.isLoading = false
                     state.isError = false
@@ -34,7 +35,9 @@ export const authSlice = createSlice({
                 }
             )
             .addMatcher(
-                (action) =>action.type.startsWith('auth') &&action.type.endsWith('/pending'),
+                (action) =>
+                    action.type.startsWith('auth') &&
+                    action.type.endsWith('/pending'),
                 (state) => {
                     state.isLoading = true
                     state.isError = false
@@ -42,7 +45,9 @@ export const authSlice = createSlice({
                 }
             )
             .addMatcher(
-                (action) => action.type.startsWith('auth') &&action.type.endsWith('/rejected'),
+                (action) =>
+                    action.type.startsWith('auth') &&
+                    action.type.endsWith('/rejected'),
                 (state, action) => {
                     state.isLoading = false
                     state.isError = true

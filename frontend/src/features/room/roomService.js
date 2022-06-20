@@ -6,7 +6,7 @@ export async function createRoomService(token){
             Authorization: `Bearer ${token}`,
         },
     }
-    const response = await axios.get(BASE_URL+'all')
+    const response = await axios.post(BASE_URL,null,config)
     return response.data
 }
 export async function getRoomsFromUserService(token){
@@ -16,5 +16,14 @@ export async function getRoomsFromUserService(token){
         },
     }
     const response = await axios.get(BASE_URL,config)
+    return response.data
+}
+export async function getRoomFromIdService(token,Id){
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    }
+    const response = await axios.get(`${BASE_URL}/join/${Id}`,config)
     return response.data
 }

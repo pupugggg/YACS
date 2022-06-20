@@ -50,6 +50,3 @@ export const getMe = createAsyncThunk(
         }
     }
 )
-export const logout = ()=>{
-    localStorage.removeItem('user')
-} 
