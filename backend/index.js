@@ -23,17 +23,19 @@ async function main() {
     app.use(require('./routes/roomRoute'))
     io.on('connection', (socket) => {
         console.log(socket.id, 'connected')
-        socket.on('join', (room) => {
+        socket.on('join room',(room)=>{
             socket.join(room)
-            socket.emit('joined', room, socket.id)
+            const userInRoom = io.sockets.adapter.rooms.get(room)
+            console.log('current room',userInRoom)
+            socket.emit('users',[...userInRoom].filter(e=>e!==socket.id))
         })
-        socket.on('leave', (room) => {
-            socket.leave(room)
-            socket.to(room).emit('bye', room, socket.id)
-            socket.emit('leave', room, socket.id)
-        })
+        socket.on("disconnect", (reason) => {
+            console.log(socket.id,'disconnect due to ',reason)
+          });
     })
-
+    io.on("connect_error", (err) => {
+        console.log(`connect_error due to ${err.message}`);
+      });
     app.use(require('./middlewares/errorHandler'))
     const port = process.env.port || 5000
     httpServer.listen(port, () => {
