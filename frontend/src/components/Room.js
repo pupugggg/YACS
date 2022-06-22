@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getRoomFromId } from '../features/room/Reducers'
 import CssBaseline from '@mui/material/CssBaseline'
-import io from "socket.io-client";
+import io from 'socket.io-client'
 import {
     Box,
     Button,
@@ -54,20 +54,69 @@ function Room() {
     const [stream, setStream] = useState(null)
     const [selected, setSelected] = useState(null)
     const localVideoRef = useRef(null)
-    const socketRef = useRef(null);
+    const socketRef = useRef(null)
+    const peers = useRef(new Map())
+    function createPeer(targetId,sourceId){
+        const pc = new RTCPeerConnection()
+        pc.onicecandidate = e =>{
+            const data = {
+                from:sourceId,
+                to:targetId,
+                candidate:null
+            }
+            if(e.candidate){
+                data.candidate = e.candidate.candidate
+                data.sdpMid = e.candidate.sdpMid
+                data.sdpMLineIndex = e.candidate.sdpMLineIndex
+            }
+            socketRef.current.emit('candidate',data)
+        }
+        pc.ontrack = e => console.log(e.streams);
+        stream?.getTracks().forEach(track=>pc.addTrack(track,stream))
+        return pc
+    }
     useEffect(() => {
         dispatch(getRoomFromId(id))
         handleGetMedia()
-        socketRef.current= io.connect('/')
-        socketRef.current.emit('join room',id)
-        socketRef.current.on('users',(data)=>{
-            console.log('data:',data)
+        socketRef.current = io.connect('/')
+        socketRef.current.on('users', (data) => {
+            console.log('data:', data)
+            data.forEach(async(targetId) => {
+                const sourceId = socketRef.current.id
+                const pc = createPeer(targetId,sourceId)   
+                const offer = await pc.createOffer()
+                socketRef.current.emit('offer',{from:sourceId,to:targetId,sdp:offer.sdp})   
+                await pc.setLocalDescription(offer)
+                peers.current.set(targetId,pc)  
+            });
         })
-        
-        socketRef.current.on("connect_error", (err) => {
-            console.log(`connect_error due to ${err.message}`);
-          });
-    }, [dispatch,id])
+        socketRef.current.on('offer',async(data)=>{
+            const sourceId = socketRef.current.id
+            const targetId = data.from
+            const pc = createPeer(targetId,sourceId)
+            await pc.setRemoteDescription(data.sdp)
+            const answer = await pc.createAnswer()
+            socketRef.current.emit('answer',{from:sourceId,to:targetId,sdp:answer.sdp})
+            await pc.setLocalDescription(answer)
+            peers.current.set(targetId,pc)
+        })
+        socketRef.current.on('answer',async(data)=>{
+            const pc = peers.current.get(data.from)
+            await pc.setRemoteDescription(data.sdp)
+            peers.current.set(data.from,pc)
+        })
+        socketRef.current.on('icecandidate',async(data)=>{
+            const pc = peers.current.get(data.from)
+            if(!data.candidate){
+                await pc.addIceCandidate(null)
+            }else{
+                await pc.addIceCandidate(data)
+            }
+        })
+        socketRef.current.on('connect_error', (err) => {
+            console.log(`connect_error due to ${err.message}`)
+        })
+    }, [dispatch, id])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
         catagorizedDevice[type] = value
@@ -140,7 +189,8 @@ function Room() {
     function handleOpen() {
         let tmp = !open
         setOpen(tmp)
-        setStream(tmp ? stream : null)
+        if(tmp)
+        socketRef.current.emit('join room', id)
     }
     const gotDevices = (devices) => {
         const catagorizedDevice = {
@@ -190,19 +240,20 @@ function Room() {
                     component={'video'}
                     ref={localVideoRef}
                 ></CardMedia>
-                <Box sx={{display:'flex',flexDirection:'row'}}>
-                {devices ? (
-                    Object.entries(devices).map(([type, devicesArray]) => (
-                        <DeviceSelect
-                            key={type}
-                            type={type}
-                            devices={devicesArray}
-                            handleSelect={handleSelect}
-                        />
-                    ))
-                ) : (
-                    <></>
-                )}</Box>
+                <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                    {devices ? (
+                        Object.entries(devices).map(([type, devicesArray]) => (
+                            <DeviceSelect
+                                key={type}
+                                type={type}
+                                devices={devicesArray}
+                                handleSelect={handleSelect}
+                            />
+                        ))
+                    ) : (
+                        <></>
+                    )}
+                </Box>
             </Box>
         </>
     )
