@@ -21,17 +21,43 @@ async function main() {
     app.use(cors())
     app.use(require('./routes/authRoute'))
     app.use(require('./routes/roomRoute'))
+    const users = {};
+    const socketToRoom = {};
     io.on('connection', (socket) => {
         console.log(socket.id, 'connected')
-        socket.on('join room',(room)=>{
-            socket.join(room)
-            const userInRoom = io.sockets.adapter.rooms.get(room)
-            console.log('current room',userInRoom)
-            socket.emit('users',[...userInRoom].filter(e=>e!==socket.id))
-        })
-        socket.on("disconnect", (reason) => {
-            console.log(socket.id,'disconnect due to ',reason)
-          });
+        socket.on("join room", roomID => {
+            if (users[roomID]) {
+                const length = users[roomID].length;
+                if (length === 4) {
+                    socket.emit("room full");
+                    return;
+                }
+                users[roomID].push(socket.id);
+            } else {
+                users[roomID] = [socket.id];
+            }
+            socketToRoom[socket.id] = roomID;
+            const usersInThisRoom = users[roomID].filter(id => id !== socket.id);
+    
+            socket.emit("all users", usersInThisRoom);
+        });
+    
+        socket.on("sending signal", payload => {
+            io.to(payload.userToSignal).emit('user joined', { signal: payload.signal, callerID: payload.callerID });
+        });
+    
+        socket.on("returning signal", payload => {
+            io.to(payload.callerID).emit('receiving returned signal', { signal: payload.signal, id: socket.id });
+        });
+    
+        socket.on('disconnect', () => {
+            const roomID = socketToRoom[socket.id];
+            let room = users[roomID];
+            if (room) {
+                room = room.filter(id => id !== socket.id);
+                users[roomID] = room;
+            }
+        });
     })
     io.on("connect_error", (err) => {
         console.log(`connect_error due to ${err.message}`);

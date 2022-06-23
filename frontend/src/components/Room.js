@@ -3,6 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getRoomFromId } from '../features/room/Reducers'
 import CssBaseline from '@mui/material/CssBaseline'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
 import io from 'socket.io-client'
 import {
     Box,
@@ -13,11 +18,7 @@ import {
     Select,
     CardMedia,
 } from '@mui/material'
-
-function Video(props) {
-    const ref = useRef()
-    useEffect(() => {})
-}
+import Peer from 'simple-peer'
 
 function DeviceSelect(props) {
     const [choice, SetChoice] = useState(0)
@@ -45,76 +46,115 @@ function DeviceSelect(props) {
     )
 }
 
+const Video = (props) => {
+    const ref = useRef()
+
+    useEffect(() => {
+        props.peer.on('stream', (stream) => {
+            ref.current.srcObject = stream
+        })
+    }, [])
+
+    return (
+        <CardMedia
+            sx={{ width: '50%', height: '50%' }}
+            playsInline
+            autoPlay
+            component={'video'}
+            ref={ref}
+        ></CardMedia>
+    )
+}
+
 function Room() {
     let { id } = useParams()
     const dispatch = useDispatch()
     const { isError, room } = useSelector((s) => s.room)
     const [devices, setDevices] = useState(null)
-    const [open, setOpen] = useState(null)
-    const [stream, setStream] = useState(null)
+    const [open, setOpen] = useState(false)
+    const stream = useRef(null)
     const [selected, setSelected] = useState(null)
     const localVideoRef = useRef(null)
     const socketRef = useRef(null)
-    const peers = useRef(new Map())
-    function createPeer(targetId,sourceId){
-        const pc = new RTCPeerConnection()
-        pc.onicecandidate = e =>{
-            const data = {
-                from:sourceId,
-                to:targetId,
-                candidate:null
-            }
-            if(e.candidate){
-                data.candidate = e.candidate.candidate
-                data.sdpMid = e.candidate.sdpMid
-                data.sdpMLineIndex = e.candidate.sdpMLineIndex
-            }
-            socketRef.current.emit('candidate',data)
-        }
-        pc.ontrack = e => console.log(e.streams);
-        stream?.getTracks().forEach(track=>pc.addTrack(track,stream))
-        return pc
+    const peersRef = useRef([])
+    const [peers, setPeers] = useState([])
+    const [start, setStart] = React.useState(false)
+    function createPeer(userToSignal, callerID, stream) {
+        const peer = new Peer({
+            initiator: true,
+            trickle: false,
+            stream,
+        })
+
+        peer.on('signal', (signal) => {
+            socketRef.current.emit('sending signal', {
+                userToSignal,
+                callerID,
+                signal,
+            })
+        })
+
+        return peer
     }
+
+    function addPeer(incomingSignal, callerID, stream) {
+        const peer = new Peer({
+            initiator: false,
+            trickle: false,
+            stream,
+        })
+
+        peer.on('signal', (signal) => {
+            socketRef.current.emit('returning signal', { signal, callerID })
+        })
+
+        peer.signal(incomingSignal)
+
+        return peer
+    }
+
     useEffect(() => {
         dispatch(getRoomFromId(id))
         handleGetMedia()
+
         socketRef.current = io.connect('/')
-        socketRef.current.on('users', (data) => {
-            console.log('data:', data)
-            data.forEach(async(targetId) => {
-                const sourceId = socketRef.current.id
-                const pc = createPeer(targetId,sourceId)   
-                const offer = await pc.createOffer()
-                socketRef.current.emit('offer',{from:sourceId,to:targetId,sdp:offer.sdp})   
-                await pc.setLocalDescription(offer)
-                peers.current.set(targetId,pc)  
-            });
-        })
-        socketRef.current.on('offer',async(data)=>{
-            const sourceId = socketRef.current.id
-            const targetId = data.from
-            const pc = createPeer(targetId,sourceId)
-            await pc.setRemoteDescription(data.sdp)
-            const answer = await pc.createAnswer()
-            socketRef.current.emit('answer',{from:sourceId,to:targetId,sdp:answer.sdp})
-            await pc.setLocalDescription(answer)
-            peers.current.set(targetId,pc)
-        })
-        socketRef.current.on('answer',async(data)=>{
-            const pc = peers.current.get(data.from)
-            await pc.setRemoteDescription(data.sdp)
-            peers.current.set(data.from,pc)
-        })
-        socketRef.current.on('icecandidate',async(data)=>{
-            const pc = peers.current.get(data.from)
-            if(!data.candidate){
-                await pc.addIceCandidate(null)
-            }else{
-                await pc.addIceCandidate(data)
-            }
-        })
         socketRef.current.on('connect_error', (err) => {
             console.log(`connect_error due to ${err.message}`)
+        })
+        socketRef.current.on('all users', (users) => {
+            const peers = []
+            users.forEach((userID) => {
+                const peer = createPeer(
+                    userID,
+                    socketRef.current.id,
+                    stream.current
+                )
+                peersRef.current.push({
+                    peerID: userID,
+                    peer,
+                })
+                peers.push(peer)
+            })
+            setPeers(peers)
+        })
+
+        socketRef.current.on('user joined', (payload) => {
+            const peer = addPeer(
+                payload.signal,
+                payload.callerID,
+                stream.current
+            )
+            peersRef.current.push({
+                peerID: payload.callerID,
+                peer,
+            })
+
+            setPeers((users) => [...users, peer])
+        })
+
+        socketRef.current.on('receiving returned signal', (payload) => {
+            const item = peersRef.current.find((p) => p.peerID === payload.id)
+            item.peer.signal(payload.signal)
         })
     }, [dispatch, id])
     const handleSelect = (value, type) => {
@@ -161,7 +201,7 @@ function Room() {
         )
     }
     function gotStream(recievedStream) {
-        setStream(recievedStream)
+        stream.current = recievedStream
         localVideoRef.current.srcObject = recievedStream
         return navigator.mediaDevices.enumerateDevices()
     }
@@ -186,11 +226,10 @@ function Room() {
             .then(gotDevices)
             .catch(handleError)
     }
-    function handleOpen() {
-        let tmp = !open
-        setOpen(tmp)
-        if(tmp)
-        socketRef.current.emit('join room', id)
+    function handleStart() {
+        let tmp = !start
+        setStart(tmp)
+        if (tmp && stream.current) socketRef.current.emit('join room', id)
     }
     const gotDevices = (devices) => {
         const catagorizedDevice = {
@@ -223,23 +262,31 @@ function Room() {
             })
         }
     }
-
+    const handleClickOpen = () => {
+        setOpen(true);
+      };
+    
+      const handleClose = () => {
+        setOpen(false);
+      };
     return (
         <>
             <CssBaseline />
             <Box>Room {id}</Box>
-            <Button variant="contained" onClick={handleOpen}>
-                {open ? 'Hang Up' : 'Start'}
+            <Button variant="contained" onClick={handleStart}>
+                {start ? 'Hang Up' : 'Start'}
             </Button>
-            <Box>
-                <CardMedia
-                    sx={{ width: '50%', height: '50%' }}
-                    playsInline
-                    autoPlay
-                    id="vdo"
-                    component={'video'}
-                    ref={localVideoRef}
-                ></CardMedia>
+            <Button variant="outlined" onClick={handleClickOpen}>
+                Devices
+            </Button>
+            <Dialog
+                open={open}
+                onClose={handleClose}
+            >
+                <DialogTitle >
+                    {"Select Your Devices"}
+                </DialogTitle>
+                <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                     {devices ? (
                         Object.entries(devices).map(([type, devicesArray]) => (
@@ -254,6 +301,20 @@ function Room() {
                         <></>
                     )}
                 </Box>
+                </DialogContent>
+            </Dialog>
+            <Box>
+                <CardMedia
+                    sx={{ width: '50%', height: '50%' }}
+                    playsInline
+                    autoPlay
+                    component={'video'}
+                    ref={localVideoRef}
+                ></CardMedia>
+                
+                {peers.map((peer, index) => {
+                    return <Video key={index} peer={peer} />
+                })}
             </Box>
         </>
     )
