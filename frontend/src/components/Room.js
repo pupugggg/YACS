@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getRoomFromId } from '../features/room/Reducers'
 import CssBaseline from '@mui/material/CssBaseline'
@@ -17,6 +17,9 @@ import {
     MenuItem,
     Select,
     CardMedia,
+    Grid,
+    Container,
+    Typography
 } from '@mui/material'
 import Peer from 'simple-peer'
 
@@ -57,7 +60,7 @@ const Video = (props) => {
 
     return (
         <CardMedia
-            sx={{ width: '50%', height: '50%' }}
+        sx={{width:'720',height:'480'}}
             playsInline
             autoPlay
             component={'video'}
@@ -69,6 +72,7 @@ const Video = (props) => {
 function Room() {
     let { id } = useParams()
     const dispatch = useDispatch()
+    const navigate = useNavigate()
     const { isError, room } = useSelector((s) => s.room)
     const [devices, setDevices] = useState(null)
     const [open, setOpen] = useState(false)
@@ -93,7 +97,6 @@ function Room() {
                 signal,
             })
         })
-
         return peer
     }
 
@@ -120,6 +123,19 @@ function Room() {
         socketRef.current = io.connect('/')
         socketRef.current.on('connect_error', (err) => {
             console.log(`connect_error due to ${err.message}`)
+        })
+        socketRef.current.on('room full', () => {
+            navigate('/')
+            socketRef.current.disconnect()
+        })
+        socketRef.current.on('leave room', (id) => {
+            if(id===socketRef.current.id)return
+            const idx = peersRef.current.findIndex(
+                (target) => target.peerID === id
+            )
+            peersRef.current[idx].peer.destroy()
+            peersRef.current.splice(idx, 1)
+            setPeers(peersRef.current.map((e) => e.peer))
         })
         socketRef.current.on('all users', (users) => {
             const peers = []
@@ -148,14 +164,21 @@ function Room() {
                 peerID: payload.callerID,
                 peer,
             })
-
             setPeers((users) => [...users, peer])
+            console.log(peersRef.current)
+            console.log(peers)
         })
 
         socketRef.current.on('receiving returned signal', (payload) => {
             const item = peersRef.current.find((p) => p.peerID === payload.id)
             item.peer.signal(payload.signal)
         })
+        return () => {
+            for (let i = 0; i < peersRef.current.length; i++) {
+                peersRef.current[i].peer.destroy()
+            }
+            socketRef.current.disconnect()
+        }
     }, [dispatch, id])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
@@ -165,6 +188,12 @@ function Room() {
             attachSinkId(localVideoRef.current, value.deviceId)
         } else {
             handleGetMedia()
+            // peersRef.current?.forEach((e) => {
+            //     e.peer.removeStream(stream.current)
+            //     stream.current.getTracks().forEach(
+            //         t=>e.peer.addTrack(t,stream.current)
+            //     )
+            // })
         }
     }
     function attachSinkId(element, sinkId) {
@@ -230,6 +259,15 @@ function Room() {
         let tmp = !start
         setStart(tmp)
         if (tmp && stream.current) socketRef.current.emit('join room', id)
+        if(!tmp){
+            socketRef.current.emit('bye')
+            for (let i = 0; i < peersRef.current.length; i++) {
+                peersRef.current[i].peer.destroy()
+            }
+            peersRef.current=[]
+            setPeers([])
+            
+        }
     }
     const gotDevices = (devices) => {
         const catagorizedDevice = {
@@ -263,12 +301,12 @@ function Room() {
         }
     }
     const handleClickOpen = () => {
-        setOpen(true);
-      };
-    
-      const handleClose = () => {
-        setOpen(false);
-      };
+        setOpen(true)
+    }
+
+    const handleClose = () => {
+        setOpen(false)
+    }
     return (
         <>
             <CssBaseline />
@@ -276,46 +314,45 @@ function Room() {
             <Button variant="contained" onClick={handleStart}>
                 {start ? 'Hang Up' : 'Start'}
             </Button>
-            <Button variant="outlined" onClick={handleClickOpen}>
+            {!start? <Button  variant="contained" onClick={handleClickOpen}>
                 Devices
-            </Button>
-            <Dialog
-                open={open}
-                onClose={handleClose}
-            >
-                <DialogTitle >
-                    {"Select Your Devices"}
-                </DialogTitle>
+            </Button>:<></>}
+            <Dialog open={open} onClose={handleClose}>
+                <DialogTitle>{'Select Your Devices'}</DialogTitle>
                 <DialogContent>
-                <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                    {devices ? (
-                        Object.entries(devices).map(([type, devicesArray]) => (
-                            <DeviceSelect
-                                key={type}
-                                type={type}
-                                devices={devicesArray}
-                                handleSelect={handleSelect}
-                            />
-                        ))
-                    ) : (
-                        <></>
-                    )}
-                </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                        {devices ? (
+                            Object.entries(devices).map(
+                                ([type, devicesArray]) => (
+                                    <DeviceSelect
+                                        key={type}
+                                        type={type}
+                                        devices={devicesArray}
+                                        handleSelect={handleSelect}
+                                    />
+                                )
+                            )
+                        ) : (
+                            <></>
+                        )}
+                    </Box>
                 </DialogContent>
             </Dialog>
-            <Box>
+           
+            <Grid container spacing={2}>
+                <Grid item  xs={6} md={6} lg = {6} >
                 <CardMedia
-                    sx={{ width: '50%', height: '50%' }}
+                    sx={{width:'720',height:'480'}}
                     playsInline
                     autoPlay
                     component={'video'}
                     ref={localVideoRef}
-                ></CardMedia>
+                ></CardMedia></Grid>
                 
                 {peers.map((peer, index) => {
-                    return <Video key={index} peer={peer} />
+                    return  <Grid   key={index} item xs={6} md={6} lg = {6}> <Video peer={peer} /></Grid>
                 })}
-            </Box>
+                </Grid>
         </>
     )
 }

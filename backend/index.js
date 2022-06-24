@@ -29,7 +29,7 @@ async function main() {
             if (users[roomID]) {
                 const length = users[roomID].length;
                 if (length === 4) {
-                    socket.emit("room full");
+                    io.to(socket.id).emit("room full");
                     return;
                 }
                 users[roomID].push(socket.id);
@@ -49,13 +49,28 @@ async function main() {
         socket.on("returning signal", payload => {
             io.to(payload.callerID).emit('receiving returned signal', { signal: payload.signal, id: socket.id });
         });
-    
-        socket.on('disconnect', () => {
+        socket.on('bye',()=>{
             const roomID = socketToRoom[socket.id];
             let room = users[roomID];
             if (room) {
                 room = room.filter(id => id !== socket.id);
                 users[roomID] = room;
+                room.forEach(other => {
+                    socket.to(other).emit('leave room',socket.id)
+                });
+            }
+        })
+        socket.on('disconnect', (reason) => {
+            const roomID = socketToRoom[socket.id];
+            let room = users[roomID];
+            if (room) {
+                room = room.filter(id => id !== socket.id);
+                users[roomID] = room;
+                console.log(socket.id,'disconnect due to ',reason,' room: ',room)
+                room.forEach(other => {
+                    socket.to(other).emit('leave room',socket.id)
+                });
+               
             }
         });
     })
