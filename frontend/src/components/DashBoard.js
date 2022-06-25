@@ -41,8 +41,8 @@ function DashBoard() {
             </Button>
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {rooms && rooms[0] ? (
-                    rooms.map((e) => (
-                        <Button variant="contained">
+                    rooms.map((e,index) => (
+                        <Button key = {index} variant="contained">
                             <Link
                                 sx={{ color: 'white' }}
                                 key={e}

@@ -21,40 +21,62 @@ async function main() {
     app.use(cors())
     app.use(require('./routes/authRoute'))
     app.use(require('./routes/roomRoute'))
-    let rooms = {}
-    let users = {}
+    const rooms = {}
+    const users = {}
     io.on('connection', (socket) => {
         socket.on('join', (room) => {
+            socket.join(room)
             if (!rooms[room]) {
                 rooms[room] = []
             }
-            users[socket.id]=room
+            users[socket.id] = room
             rooms[room].push(socket.id)
             socket.emit(
                 'callee-list',
                 rooms[room].filter((element) => element !== socket.id)
             )
         })
-        socket.on('reset',()=>{
-            rooms={}
-            users={}
-        })
         console.log(socket.id, 'connected')
         socket.on('video-offer', (data) => {
-            socket.to(data.callee).emit('video-offer', {caller:socket.id,offer:data.offer})
+            socket
+                .to(data.callee)
+                .emit('video-offer', { caller: socket.id, offer: data.offer })
         })
         socket.on('video-answer', (data) => {
-            socket.to(data.caller).emit('video-answer', {callee:socket.id,answer:data.answer})
+            socket
+                .to(data.caller)
+                .emit('video-answer', {
+                    callee: socket.id,
+                    answer: data.answer,
+                })
         })
-        socket.on('new-ice-candidate',(data)=>{
-            socket.to(data.target).emit('new-ice-candidate',{source:data.source,candidate:data.candidate})
+        socket.on('new-ice-candidate', (data) => {
+            socket
+                .to(data.target)
+                .emit('new-ice-candidate', {
+                    source: data.source,
+                    candidate: data.candidate,
+                })
+        })
+        socket.on('leave',()=>{
+            const roomName = users[socket.id]
+            if (roomName && rooms[roomName]) {
+                rooms[roomName] = rooms[roomName].filter(
+                    (element) => element !== socket.id
+                )
+                io.to(roomName).emit('bye',socket.id)
+                delete users[socket.id]
+            }
         })
         socket.on('disconnect', (reason) => {
-            console.log(socket.id,'disconnect due to ',reason)
+            console.log(socket.id, 'disconnect due to ', reason)
             const roomName = users[socket.id]
-            if(roomName && rooms[roomName]){
-            rooms[roomName] = rooms[roomName].filter((element)=>element!==socket.id) 
-            delete users[socket.id]
+            if (roomName && rooms[roomName]) {
+                rooms[roomName] = rooms[roomName].filter(
+                    (element) => element !== socket.id
+                )
+                io.to(roomName).emit('bye',socket.id)
+                delete users[socket.id]
             }
         })
     })

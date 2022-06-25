@@ -4,9 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { getRoomFromId } from '../features/room/Reducers'
 import CssBaseline from '@mui/material/CssBaseline'
 import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 import io from 'socket.io-client'
 import {
@@ -18,7 +16,6 @@ import {
     Select,
     CardMedia,
     Grid,
-    Container,
     Typography,
 } from '@mui/material'
 import Peer from 'simple-peer'
@@ -54,7 +51,6 @@ const Video = (props) => {
 
     useEffect(() => {
         ref.current.srcObject = props.stream
-        console.log(props.stream)
     }, [])
 
     return (
@@ -81,14 +77,36 @@ function Room() {
     const [selected, setSelected] = useState(null)
     const localVideoRef = useRef(null)
     const socketRef = useRef(null)
-    const peersRef = useRef([])
-    const [peers, setPeers] = useState([])
+    const peersRef = useRef(new Map())
     const [start, setStart] = React.useState(false)
-    function handleOnTrack(e,sid){
-        remoteStreamsRef.current.set(sid, e.streams[0])
-            setRemoteStreams(
-                Array.from(remoteStreamsRef.current.values())
-            )
+    function handleOnTrack(e, socketId) {
+        remoteStreamsRef.current.set(socketId, e.streams[0])
+        setRemoteStreams([...remoteStreamsRef.current.values()])
+    }
+    function closePeer(socketId) {
+        if (!peersRef.current.has(socketId)) return
+        peersRef.current.get(socketId).peer.close()
+        peersRef.current.delete(socketId)
+        remoteStreamsRef.current
+            .get(socketId)
+            .getTracks()
+            .forEach((track) => track.stop())
+        remoteStreamsRef.current.delete(socketId)
+        setRemoteStreams([...remoteStreamsRef.current.values()])
+    }
+    function handleCloseSelf() {}
+    function handleConnectionStateChange(state, socketId) {
+        switch (state) {
+            case 'disconnected':
+            case 'closed':
+            case 'failed':
+                console.log(state)
+                closePeer(socketId)
+                break
+            default:
+                console.log(state)
+                break
+        }
     }
     async function createPeerConnection(callee) {
         const iceConfig = {
@@ -103,7 +121,7 @@ function Room() {
             })
         }
         pc.ontrack = (e) => {
-            handleOnTrack(e,callee)
+            handleOnTrack(e, callee)
         }
         stream.current
             .getTracks()
@@ -114,8 +132,11 @@ function Room() {
         }
         const offer = await pc.createOffer(offerOptions)
         await pc.setLocalDescription(offer)
+        pc.onconnectionstatechange = (ev) => {
+            handleConnectionStateChange(pc.connectionState, callee)
+        }
         socketRef.current.emit('video-offer', { offer: offer, callee: callee })
-        peersRef.current.push({
+        peersRef.current.set(callee, {
             id: callee,
             peer: pc,
         })
@@ -133,9 +154,11 @@ function Room() {
             })
         }
         pc.ontrack = (e) => {
-            handleOnTrack(e,caller)
+            handleOnTrack(e, caller)
         }
-        console.log(offer)
+        pc.onconnectionstatechange = (e) => {
+            handleConnectionStateChange(pc.connectionState, caller)
+        }
         await pc.setRemoteDescription(offer)
         stream.current
             .getTracks()
@@ -146,39 +169,23 @@ function Room() {
             answer: answer,
             caller: caller,
         })
-        peersRef.current.push({
+        peersRef.current.set(caller, {
             id: caller,
             peer: pc,
         })
-        setPeers(peersRef.current)
     }
     async function setPeerConnectionAnswer(callee, answer) {
-        const targetIndex = peersRef.current.findIndex(
-            (element) => element.id === callee
-        )
-        await peersRef.current[targetIndex].peer.setRemoteDescription(answer)
+        await peersRef.current.get(callee).peer.setRemoteDescription(answer)
     }
     async function setPeerConnectionCandidate(source, candidate) {
-        const targetIndex = peersRef.current.findIndex(
-            (element) => element.id === source
-        )
-        await peersRef.current[targetIndex].peer.addIceCandidate(candidate)
+        await peersRef.current.get(source).peer.addIceCandidate(candidate)
     }
-    function handleServerReset() {
-        socketRef.current.emit('reset')
-        window.location.reload()
-    }
-    useEffect(() => {
-        dispatch(getRoomFromId(id))
-        handleGetMedia()
-
+    function configSocket() {
         socketRef.current = io.connect('/')
         socketRef.current.on('callee-list', async (callees) => {
-            console.log(callees)
             callees.forEach(async (callee) => {
                 await createPeerConnection(callee)
             })
-            setPeers(peersRef.current)
         })
         socketRef.current.on('video-offer', async (data) => {
             // console.log('video-offer', data, 'im', socketRef.current.id)
@@ -192,11 +199,25 @@ function Room() {
             // console.log('new-ice-candidate', data, 'im', socketRef.current.id)
             await setPeerConnectionCandidate(data.source, data.candidate)
         })
-        socketRef.current.emit('join', id)
         socketRef.current.on('connect_error', (err) => {
             console.log(`connect_error due to ${err.message}`)
         })
-    }, [dispatch, id])
+        socketRef.current.on('bye', (socketId) => {
+            closePeer(socketId)
+        })
+    }
+    useEffect(() => {
+        dispatch(getRoomFromId(id))
+        if (isError) {
+            navigate('/')
+        }
+        handleGetMedia()
+        configSocket()
+
+        return () => {
+            socketRef.current.close()
+        }
+    }, [dispatch, id, isError])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
         catagorizedDevice[type] = value
@@ -266,11 +287,18 @@ function Room() {
             .catch(handleError)
     }
     function handleStart() {
-        let tmp = !start
-        setStart(tmp)
-        if (tmp && stream.current) socketRef.current.emit('join room', id)
-        if (!tmp) {
-            socketRef.current.emit('bye')
+        let currentState = !start
+        setStart(currentState)
+        if (currentState && stream.current) socketRef.current.emit('join', id)
+        if (!currentState) {
+            socketRef.current.emit('leave')
+            ;[...peersRef.current.keys()].forEach((socketId) => {
+                peersRef.current.get(socketId).peer.close()
+                peersRef.current.delete(socketId)
+            })
+            peersRef.current = new Map()
+            remoteStreamsRef.current = new Map()
+            setRemoteStreams([])
         }
     }
     const gotDevices = (devices) => {
@@ -317,9 +345,6 @@ function Room() {
             <Box>Room {id}</Box>
             <Button variant="contained" onClick={handleStart}>
                 {start ? 'Hang Up' : 'Start'}
-            </Button>
-            <Button variant="contained" onClick={handleServerReset}>
-                reset
             </Button>
             {!start ? (
                 <Button variant="contained" onClick={handleClickOpen}>
