@@ -19,7 +19,7 @@ import {
     CardMedia,
     Grid,
     Container,
-    Typography
+    Typography,
 } from '@mui/material'
 import Peer from 'simple-peer'
 
@@ -53,14 +53,13 @@ const Video = (props) => {
     const ref = useRef()
 
     useEffect(() => {
-        props.peer.on('stream', (stream) => {
-            ref.current.srcObject = stream
-        })
+        ref.current.srcObject = props.stream
+        console.log(props.stream)
     }, [])
 
     return (
         <CardMedia
-        sx={{width:'720',height:'480'}}
+            sx={{ width: '720', height: '480' }}
             playsInline
             autoPlay
             component={'video'}
@@ -77,108 +76,126 @@ function Room() {
     const [devices, setDevices] = useState(null)
     const [open, setOpen] = useState(false)
     const stream = useRef(null)
+    const remoteStreamsRef = useRef(new Map())
+    const [remoteStreams, setRemoteStreams] = useState([])
     const [selected, setSelected] = useState(null)
     const localVideoRef = useRef(null)
     const socketRef = useRef(null)
     const peersRef = useRef([])
     const [peers, setPeers] = useState([])
     const [start, setStart] = React.useState(false)
-    function createPeer(userToSignal, callerID, stream) {
-        const peer = new Peer({
-            initiator: true,
-            trickle: false,
-            stream,
-        })
-
-        peer.on('signal', (signal) => {
-            socketRef.current.emit('sending signal', {
-                userToSignal,
-                callerID,
-                signal,
+    function handleOnTrack(e,sid){
+        remoteStreamsRef.current.set(sid, e.streams[0])
+            setRemoteStreams(
+                Array.from(remoteStreamsRef.current.values())
+            )
+    }
+    async function createPeerConnection(callee) {
+        const iceConfig = {
+            iceServers: [{ url: 'stun:stun.l.google.com:19302' }],
+        }
+        const pc = new RTCPeerConnection(iceConfig)
+        pc.onicecandidate = (e) => {
+            socketRef.current.emit('new-ice-candidate', {
+                candidate: e.candidate,
+                target: callee,
+                source: socketRef.current.id,
             })
+        }
+        pc.ontrack = (e) => {
+            handleOnTrack(e,callee)
+        }
+        stream.current
+            .getTracks()
+            .forEach((track) => pc.addTrack(track, stream.current))
+        const offerOptions = {
+            offerToReceiveAudio: 1,
+            offerToReceiveVideo: 1,
+        }
+        const offer = await pc.createOffer(offerOptions)
+        await pc.setLocalDescription(offer)
+        socketRef.current.emit('video-offer', { offer: offer, callee: callee })
+        peersRef.current.push({
+            id: callee,
+            peer: pc,
         })
-        return peer
     }
-
-    function addPeer(incomingSignal, callerID, stream) {
-        const peer = new Peer({
-            initiator: false,
-            trickle: false,
-            stream,
+    async function addPeerConnection(caller, offer) {
+        const iceConfig = {
+            iceServers: [{ url: 'stun:stun.l.google.com:19302' }],
+        }
+        const pc = new RTCPeerConnection(iceConfig)
+        pc.onicecandidate = (e) => {
+            socketRef.current.emit('new-ice-candidate', {
+                candidate: e.candidate,
+                target: caller,
+                source: socketRef.current.id,
+            })
+        }
+        pc.ontrack = (e) => {
+            handleOnTrack(e,caller)
+        }
+        console.log(offer)
+        await pc.setRemoteDescription(offer)
+        stream.current
+            .getTracks()
+            .forEach((track) => pc.addTrack(track, stream.current))
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        socketRef.current.emit('video-answer', {
+            answer: answer,
+            caller: caller,
         })
-
-        peer.on('signal', (signal) => {
-            socketRef.current.emit('returning signal', { signal, callerID })
+        peersRef.current.push({
+            id: caller,
+            peer: pc,
         })
-
-        peer.signal(incomingSignal)
-
-        return peer
+        setPeers(peersRef.current)
     }
-
+    async function setPeerConnectionAnswer(callee, answer) {
+        const targetIndex = peersRef.current.findIndex(
+            (element) => element.id === callee
+        )
+        await peersRef.current[targetIndex].peer.setRemoteDescription(answer)
+    }
+    async function setPeerConnectionCandidate(source, candidate) {
+        const targetIndex = peersRef.current.findIndex(
+            (element) => element.id === source
+        )
+        await peersRef.current[targetIndex].peer.addIceCandidate(candidate)
+    }
+    function handleServerReset() {
+        socketRef.current.emit('reset')
+        window.location.reload()
+    }
     useEffect(() => {
         dispatch(getRoomFromId(id))
         handleGetMedia()
 
         socketRef.current = io.connect('/')
+        socketRef.current.on('callee-list', async (callees) => {
+            console.log(callees)
+            callees.forEach(async (callee) => {
+                await createPeerConnection(callee)
+            })
+            setPeers(peersRef.current)
+        })
+        socketRef.current.on('video-offer', async (data) => {
+            // console.log('video-offer', data, 'im', socketRef.current.id)
+            await addPeerConnection(data.caller, data.offer)
+        })
+        socketRef.current.on('video-answer', async (data) => {
+            // console.log('video-answerr', data, 'im', socketRef.current.id)
+            await setPeerConnectionAnswer(data.callee, data.answer)
+        })
+        socketRef.current.on('new-ice-candidate', async (data) => {
+            // console.log('new-ice-candidate', data, 'im', socketRef.current.id)
+            await setPeerConnectionCandidate(data.source, data.candidate)
+        })
+        socketRef.current.emit('join', id)
         socketRef.current.on('connect_error', (err) => {
             console.log(`connect_error due to ${err.message}`)
         })
-        socketRef.current.on('room full', () => {
-            navigate('/')
-            socketRef.current.disconnect()
-        })
-        socketRef.current.on('leave room', (id) => {
-            if(id===socketRef.current.id)return
-            const idx = peersRef.current.findIndex(
-                (target) => target.peerID === id
-            )
-            peersRef.current[idx].peer.destroy()
-            peersRef.current.splice(idx, 1)
-            setPeers(peersRef.current.map((e) => e.peer))
-        })
-        socketRef.current.on('all users', (users) => {
-            const peers = []
-            users.forEach((userID) => {
-                const peer = createPeer(
-                    userID,
-                    socketRef.current.id,
-                    stream.current
-                )
-                peersRef.current.push({
-                    peerID: userID,
-                    peer,
-                })
-                peers.push(peer)
-            })
-            setPeers(peers)
-        })
-
-        socketRef.current.on('user joined', (payload) => {
-            const peer = addPeer(
-                payload.signal,
-                payload.callerID,
-                stream.current
-            )
-            peersRef.current.push({
-                peerID: payload.callerID,
-                peer,
-            })
-            setPeers((users) => [...users, peer])
-            console.log(peersRef.current)
-            console.log(peers)
-        })
-
-        socketRef.current.on('receiving returned signal', (payload) => {
-            const item = peersRef.current.find((p) => p.peerID === payload.id)
-            item.peer.signal(payload.signal)
-        })
-        return () => {
-            for (let i = 0; i < peersRef.current.length; i++) {
-                peersRef.current[i].peer.destroy()
-            }
-            socketRef.current.disconnect()
-        }
     }, [dispatch, id])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
@@ -188,12 +205,6 @@ function Room() {
             attachSinkId(localVideoRef.current, value.deviceId)
         } else {
             handleGetMedia()
-            // peersRef.current?.forEach((e) => {
-            //     e.peer.removeStream(stream.current)
-            //     stream.current.getTracks().forEach(
-            //         t=>e.peer.addTrack(t,stream.current)
-            //     )
-            // })
         }
     }
     function attachSinkId(element, sinkId) {
@@ -221,7 +232,6 @@ function Room() {
             console.warn('Browser does not support output device selection.')
         }
     }
-
     function handleError(error) {
         console.log(
             'navigator.MediaDevices.getUserMedia error: ',
@@ -259,14 +269,8 @@ function Room() {
         let tmp = !start
         setStart(tmp)
         if (tmp && stream.current) socketRef.current.emit('join room', id)
-        if(!tmp){
+        if (!tmp) {
             socketRef.current.emit('bye')
-            for (let i = 0; i < peersRef.current.length; i++) {
-                peersRef.current[i].peer.destroy()
-            }
-            peersRef.current=[]
-            setPeers([])
-            
         }
     }
     const gotDevices = (devices) => {
@@ -314,9 +318,16 @@ function Room() {
             <Button variant="contained" onClick={handleStart}>
                 {start ? 'Hang Up' : 'Start'}
             </Button>
-            {!start? <Button  variant="contained" onClick={handleClickOpen}>
-                Devices
-            </Button>:<></>}
+            <Button variant="contained" onClick={handleServerReset}>
+                reset
+            </Button>
+            {!start ? (
+                <Button variant="contained" onClick={handleClickOpen}>
+                    Devices
+                </Button>
+            ) : (
+                <></>
+            )}
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>{'Select Your Devices'}</DialogTitle>
                 <DialogContent>
@@ -338,21 +349,24 @@ function Room() {
                     </Box>
                 </DialogContent>
             </Dialog>
-           
+
             <Grid container spacing={2}>
-                <Grid item  xs={6} md={6} lg = {6} >
-                <CardMedia
-                    sx={{width:'720',height:'480'}}
-                    playsInline
-                    autoPlay
-                    component={'video'}
-                    ref={localVideoRef}
-                ></CardMedia></Grid>
-                
-                {peers.map((peer, index) => {
-                    return  <Grid   key={index} item xs={6} md={6} lg = {6}> <Video peer={peer} /></Grid>
-                })}
+                <Grid item xs={6} md={6} lg={6}>
+                    <CardMedia
+                        sx={{ width: '720', height: '480' }}
+                        playsInline
+                        autoPlay
+                        component={'video'}
+                        ref={localVideoRef}
+                    ></CardMedia>
                 </Grid>
+
+                {remoteStreams.map((remoteStream, index) => (
+                    <Grid item key={index} xs={6} md={6} lg={6}>
+                        <Video stream={remoteStream} />
+                    </Grid>
+                ))}
+            </Grid>
         </>
     )
 }
