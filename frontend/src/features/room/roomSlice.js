@@ -23,8 +23,8 @@ export const roomSlice = createSlice({
                 state.isError = false
                 state.isSuccess = true
                 state.message = ''
-                state.room = action.payload.room
-                state.rooms = action.payload.rooms
+                state.room = action.payload.room?action.payload.room:state.room
+                state.rooms = action.payload.rooms?action.payload.rooms:state.rooms
             }
         )
         .addMatcher(

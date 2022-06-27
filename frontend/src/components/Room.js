@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { getRoomFromId } from '../features/room/Reducers'
 import CssBaseline from '@mui/material/CssBaseline'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import io from 'socket.io-client'
+import hark from 'hark'
 import {
     Box,
     Button,
@@ -18,7 +18,6 @@ import {
     Grid,
     Typography,
 } from '@mui/material'
-import Peer from 'simple-peer'
 
 function DeviceSelect(props) {
     const [choice, SetChoice] = useState(0)
@@ -48,14 +47,30 @@ function DeviceSelect(props) {
 
 const Video = (props) => {
     const ref = useRef()
-
+    const [videoColor, setVideoColor] = useState('black')
     useEffect(() => {
         ref.current.srcObject = props.stream
+        const speech = hark(props.stream,{
+            threshold:-80})
+        speech.on('speaking', function () {
+            setVideoColor('green')
+        })
+
+        speech.on('stopped_speaking', function () {
+            setVideoColor('black')
+        })
     }, [])
 
     return (
         <CardMedia
-            sx={{ width: '720', height: '480' }}
+            sx={{
+                width: '720',
+                height: '480',
+                border: 1,
+                borderRadius: '25px',
+                borderColor: videoColor,
+                borderWidth: '3px',
+            }}
             playsInline
             autoPlay
             component={'video'}
@@ -69,6 +84,7 @@ function Room() {
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const { isError, room } = useSelector((s) => s.room)
+    const [videoColor, setVideoColor] = useState('black')
     const [devices, setDevices] = useState(null)
     const [open, setOpen] = useState(false)
     const stream = useRef(null)
@@ -94,7 +110,6 @@ function Room() {
         remoteStreamsRef.current.delete(socketId)
         setRemoteStreams([...remoteStreamsRef.current.values()])
     }
-    function handleCloseSelf() {}
     function handleConnectionStateChange(state, socketId) {
         switch (state) {
             case 'disconnected':
@@ -207,7 +222,6 @@ function Room() {
         })
     }
     useEffect(() => {
-        dispatch(getRoomFromId(id))
         if (isError) {
             navigate('/')
         }
@@ -217,7 +231,7 @@ function Room() {
         return () => {
             socketRef.current.close()
         }
-    }, [dispatch, id, isError])
+    }, [id, isError])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
         catagorizedDevice[type] = value
@@ -263,6 +277,15 @@ function Room() {
     function gotStream(recievedStream) {
         stream.current = recievedStream
         localVideoRef.current.srcObject = recievedStream
+        const speech = hark(recievedStream,{
+            threshold:-80})
+        speech.on('speaking', function () {
+            setVideoColor('green')
+        })
+
+        speech.on('stopped_speaking', function () {
+            setVideoColor('black')
+        })
         return navigator.mediaDevices.enumerateDevices()
     }
     const handleGetMedia = () => {
@@ -340,9 +363,8 @@ function Room() {
         setOpen(false)
     }
     return (
-        <>
+        <React.Fragment>
             <CssBaseline />
-            <Box>Room {id}</Box>
             <Button variant="contained" onClick={handleStart}>
                 {start ? 'Hang Up' : 'Start'}
             </Button>
@@ -378,7 +400,14 @@ function Room() {
             <Grid container spacing={2}>
                 <Grid item xs={6} md={6} lg={6}>
                     <CardMedia
-                        sx={{ width: '720', height: '480' }}
+                        sx={{
+                            width: '720',
+                            height: '480',
+                            border: 1,
+                            borderRadius: '25px',
+                            borderColor: videoColor,
+                            borderWidth: '3px',
+                        }}
                         playsInline
                         autoPlay
                         component={'video'}
@@ -392,7 +421,7 @@ function Room() {
                     </Grid>
                 ))}
             </Grid>
-        </>
+        </React.Fragment>
     )
 }
 

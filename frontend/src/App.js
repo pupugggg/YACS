@@ -4,7 +4,8 @@ import SignInSide from './components/Login'
 import RegisterSide from './components/Register'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import Room from './components/Room'
-import DashBoard from './components/DashBoard'
+import Main from './components/Main'
+import Header from './components/Header'
 const theme = createTheme({
     palette: {
         mode: 'dark',
@@ -34,14 +35,22 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <Router>
-                <Routes>
-                    <Route path="/login" element={<SignInSide />} />
-                    <Route path="/register" element={<RegisterSide />} />
-                    <Route path="/room/:id" element={<Room />} />
-                    <Route path="/dashboard" element={<DashBoard />} />
-                    <Route path="*" element={<DashBoard />} />
-                </Routes>
-            </Router>
+            <Header
+                main={
+                    
+                        <Routes>
+                            <Route path="/login" element={<SignInSide />} />
+                            <Route
+                                path="/register"
+                                element={<RegisterSide />}
+                            />
+                            <Route path="/room/:id" element={<Room />} />
+                            <Route path="*" element={<Main />} />
+                        </Routes>
+                   
+                }
+            />
+             </Router>
         </ThemeProvider>
     )
 }

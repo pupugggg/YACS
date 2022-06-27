@@ -84,7 +84,7 @@ export default function RegisterSide() {
             username: data.get('username'),
             email: data.get('email'),
             password: data.get('password'),
-        }))//.then(res=>navigate('/dashboard'))
+        }))
     }
 
     return (

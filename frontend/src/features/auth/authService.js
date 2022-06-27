@@ -5,7 +5,7 @@ const BASE_URL = '/api/v1/auth/'
 export async function registerService(userData) {
     const response = await axios.post(BASE_URL + 'register', userData)
     if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data))
+        localStorage.setItem('user', JSON.stringify({token:response.data.token}))
     }
     return response.data
 }
@@ -23,7 +23,7 @@ export async function getMeService(token) {
 export async function loginService(userData) {
     const response = await axios.post(BASE_URL + 'login', userData)
     if (response.data) {
-        localStorage.setItem('user', JSON.stringify(response.data))
+        localStorage.setItem('user', JSON.stringify({token:response.data.token}))
     }
     return response.data
 }

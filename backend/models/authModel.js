@@ -2,7 +2,7 @@ const Error = require('../util/ErrorWithStatusCode')
 const { Schema, model } = require('mongoose')
 const { generateToken } = require('../service/authService')
 const bcrypt = require('bcrypt')
-const roomModel = require('./roomModel')
+const {roomModel} = require('./roomModel')
 const authSchema = new Schema({
     username: { type: String, required: true },
     email: { type: String, required: true },
@@ -17,8 +17,8 @@ authSchema.static('register', async function (data) {
     const hashed = await bcrypt.hash(data.password, saltRounds)
     data.password = hashed
     const result = await this.create(data)
-    roomModel.create({user:result._id})
-    return { token: generateToken(result) }
+    await roomModel.create({user:result._id})
+    return { token: generateToken(result),id:result._id }
 })
 authSchema.static('login', async function (data) {
     const user = await this.findOne({ email: data.email })
@@ -29,7 +29,7 @@ authSchema.static('login', async function (data) {
     if (!passwordMatched) {
         throw new Error('Email or password mismatched')
     }
-    return { token: generateToken(user) }
+    return { token: generateToken(user) ,id:user._id}
 })
 const authModel = model('auth', authSchema)
 

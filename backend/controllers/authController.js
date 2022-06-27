@@ -12,7 +12,7 @@ const register = asyncHandler(async(req,res)=>{
 })
 
 const getMe = asyncHandler(async(req,res)=>{
-    res.json({token:req.token})
+    res.json({token:req.token,id:req.user._id})
 })
 
 module.exports = {login,register,getMe}
