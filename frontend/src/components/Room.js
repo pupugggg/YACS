@@ -17,8 +17,34 @@ import {
     CardMedia,
     Grid,
     Typography,
+    Drawer,
+    SpeedDial,
+    SpeedDialAction,
 } from '@mui/material'
-
+import MuiAppBar from '@mui/material/AppBar'
+import Toolbar from '@mui/material/Toolbar'
+import List from '@mui/material/List'
+import Divider from '@mui/material/Divider'
+import IconButton from '@mui/material/IconButton'
+import MenuIcon from '@mui/icons-material/Menu'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ListItem from '@mui/material/ListItem'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
+import InboxIcon from '@mui/icons-material/MoveToInbox'
+import MailIcon from '@mui/icons-material/Mail'
+import { styled, useTheme } from '@mui/material/styles'
+import DevicesIcon from '@mui/icons-material/Devices'
+import CallEndIcon from '@mui/icons-material/CallEnd'
+import CallIcon from '@mui/icons-material/Call'
+import Accordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 function DeviceSelect(props) {
     const [choice, SetChoice] = useState(0)
     //props.type props.onChange props.devices
@@ -45,13 +71,36 @@ function DeviceSelect(props) {
     )
 }
 
+const drawerWidth = 240
+
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
+    ({ theme, open }) => ({
+        
+        flexGrow: 1,
+        padding: theme.spacing(3),
+        transition: theme.transitions.create('margin', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+        }),
+        marginRight: `-${drawerWidth}px`,
+        ...(open && {
+            transition: theme.transitions.create('margin', {
+                easing: theme.transitions.easing.easeOut,
+                duration: theme.transitions.duration.enteringScreen,
+            }),
+            marginRight: 0,
+        }),
+    })
+)
+
 const Video = (props) => {
     const ref = useRef()
     const [videoColor, setVideoColor] = useState('black')
     useEffect(() => {
         ref.current.srcObject = props.stream
-        const speech = hark(props.stream,{
-            threshold:-80})
+        const speech = hark(props.stream, {
+            threshold: -80,
+        })
         speech.on('speaking', function () {
             setVideoColor('green')
         })
@@ -64,8 +113,6 @@ const Video = (props) => {
     return (
         <CardMedia
             sx={{
-                width: '720',
-                height: '480',
                 border: 1,
                 borderRadius: '25px',
                 borderColor: videoColor,
@@ -81,10 +128,9 @@ const Video = (props) => {
 
 function Room() {
     let { id } = useParams()
-    const dispatch = useDispatch()
     const navigate = useNavigate()
     const { isError, room } = useSelector((s) => s.room)
-    const [videoColor, setVideoColor] = useState('black')
+    const [videoColor, setVideoColor] = useState('white')
     const [devices, setDevices] = useState(null)
     const [open, setOpen] = useState(false)
     const stream = useRef(null)
@@ -277,14 +323,15 @@ function Room() {
     function gotStream(recievedStream) {
         stream.current = recievedStream
         localVideoRef.current.srcObject = recievedStream
-        const speech = hark(recievedStream,{
-            threshold:-80})
+        const speech = hark(recievedStream, {
+            threshold: -80,
+        })
         speech.on('speaking', function () {
             setVideoColor('green')
         })
 
         speech.on('stopped_speaking', function () {
-            setVideoColor('black')
+            setVideoColor('white')
         })
         return navigator.mediaDevices.enumerateDevices()
     }
@@ -362,19 +409,19 @@ function Room() {
     const handleClose = () => {
         setOpen(false)
     }
+    const [openDrawer, setOpenDrawer] = React.useState(true)
+
+    const handleDrawerOpen = () => {
+        setOpenDrawer(true)
+    }
+
+    const handleDrawerClose = () => {
+        setOpenDrawer(false)
+    }
+    const theme = useTheme()
     return (
-        <React.Fragment>
+        <Box sx={{ minHeight: '200vh' }}>
             <CssBaseline />
-            <Button variant="contained" onClick={handleStart}>
-                {start ? 'Hang Up' : 'Start'}
-            </Button>
-            {!start ? (
-                <Button variant="contained" onClick={handleClickOpen}>
-                    Devices
-                </Button>
-            ) : (
-                <></>
-            )}
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>{'Select Your Devices'}</DialogTitle>
                 <DialogContent>
@@ -396,10 +443,67 @@ function Room() {
                     </Box>
                 </DialogContent>
             </Dialog>
+           
+            <Box sx={{display:'flex'}}>
+                
 
-            <Grid container spacing={2}>
-                <Grid item xs={6} md={6} lg={6}>
-                    <CardMedia
+                <Main open={openDrawer} sx={{mt:'3%',backgroundColor:'blue',minHeight:'100vh'}}>
+                    <SpeedDial
+                sx={{ position: 'fixed', bottom: 16, right:16,...(openDrawer&&{transitionDuration:'250ms',transform:`translateX(${-(16+drawerWidth)}px)`}) }}
+                ariaLabel="SpeedDial"
+                icon={!start ? <CallIcon /> : <CallEndIcon />}
+            >
+                {openDrawer?<SpeedDialAction
+                    sx={{ backgroundColor: 'white' }}
+                    onClick={handleDrawerClose}
+                    icon={<KeyboardArrowRightIcon sx={{ color: 'Black' }} />}
+                    tooltipTitle={'Hide Camera'}
+                />:<SpeedDialAction
+                    sx={{ backgroundColor: 'white' }}
+                    onClick={handleDrawerOpen}
+                    icon={<KeyboardArrowLeftIcon sx={{ color: 'Black' }} />}
+                    tooltipTitle={'Show Camera'}
+                />}
+                {!start && (
+                    <SpeedDialAction
+                        sx={{ backgroundColor: 'white' }}
+                        onClick={handleClickOpen}
+                        icon={<DevicesIcon sx={{ color: 'Black' }} />}
+                        tooltipTitle={'Devices'}
+                    />
+                )}
+                {!start ? (
+                    <SpeedDialAction
+                        sx={{ backgroundColor: 'white' }}
+                        onClick={handleStart}
+                        icon={<CallIcon sx={{ color: 'green' }} />}
+                        tooltipTitle={'Join The Channel'}
+                    />
+                ) : (
+                    <SpeedDialAction
+                        sx={{ backgroundColor: 'white' }}
+                        onClick={handleStart}
+                        icon={<CallEndIcon sx={{ color: 'red' }} />}
+                        tooltipTitle={'Leave The Channel'}
+                    />
+                )}
+            </SpeedDial>
+            <Box sx={{width:'100%',backgroundColor:'red'}}>wefwef</Box>
+                </Main>
+                <Drawer
+                    sx={{
+                        width: drawerWidth,
+                        flexShrink: 0,
+                        '& .MuiDrawer-paper': {
+                            width: drawerWidth,
+                            boxSizing: 'border-box',
+                        },
+                    }}
+                    variant="persistent"
+                    anchor="right"
+                    open={openDrawer}
+                >
+                      <CardMedia
                         sx={{
                             width: '720',
                             height: '480',
@@ -413,15 +517,13 @@ function Room() {
                         component={'video'}
                         ref={localVideoRef}
                     ></CardMedia>
-                </Grid>
 
-                {remoteStreams.map((remoteStream, index) => (
-                    <Grid item key={index} xs={6} md={6} lg={6}>
-                        <Video stream={remoteStream} />
-                    </Grid>
-                ))}
-            </Grid>
-        </React.Fragment>
+                    {remoteStreams.map((remoteStream, index) => (
+                        <Video key={index} stream={remoteStream} />
+                    ))}
+                </Drawer>
+            </Box>
+        </Box>
     )
 }
 
