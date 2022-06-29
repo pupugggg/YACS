@@ -30,6 +30,7 @@ import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 import PersonIcon from '@mui/icons-material/Person'
 import Tooltip from '@mui/material/Tooltip'
+import HomeIcon from '@mui/icons-material/Home';
 import isEmpty from 'validator/lib/isEmpty'
 import { useDispatch, useSelector } from 'react-redux'
 import { getRoomsFromUser, getRoomFromId } from '../features/room/Reducers'
@@ -45,7 +46,7 @@ const drawerWidth = 300
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
     ({ theme, open }) => ({
         marginTop: '3%',
-        minHeight: '95vh',
+       
         flexGrow: 1,
         
         transition: theme.transitions.create('margin', {
@@ -120,10 +121,6 @@ function Header(props) {
         name.current = e.target.value
     }
     const handleJoin = () => {
-        console.log(
-            url.current.startsWith('http://') ||
-                url.current.startsWith('https://')
-        )
         if (
             url.current.startsWith('http://') ||
             url.current.startsWith('https://')
@@ -296,9 +293,7 @@ function Header(props) {
                             >
                                 YACS
                             </Typography>
-                            <IconButton onClick={handleOpenUserMenu}>
-                                <PersonIcon />
-                            </IconButton>
+                           
                             <Menu
                                 sx={{ mt: '45px' }}
                                 id="menu-appbar"
@@ -342,6 +337,12 @@ function Header(props) {
                         open={open}
                     >
                         <DrawerHeader>
+                        <IconButton onClick={handleOpenUserMenu} sx={{mr:'auto'}}>
+                        <ListItemIcon>
+                                        <PersonIcon />
+                                    </ListItemIcon>
+                                <ListItemText primary={'User'} />
+                            </IconButton>
                             <IconButton onClick={handleDrawerClose}>
                                 {theme.direction === 'ltr' ? (
                                     <ChevronLeftIcon />
@@ -349,15 +350,16 @@ function Header(props) {
                                     <ChevronRightIcon />
                                 )}
                             </IconButton>
+                    
                         </DrawerHeader>
                         <Divider />
                         <List>
                             <ListItem disablePadding>
                                 <ListItemButton onClick={(e) => navigate('/')}>
                                     <ListItemIcon>
-                                        <WorkIcon />
+                                        <HomeIcon />
                                     </ListItemIcon>
-                                    <ListItemText primary={'Menu'} />
+                                    <ListItemText primary={'Home'} />
                                 </ListItemButton>
                             </ListItem>
                             {['Create WorkSpace', 'Join'].map((text, index) => (

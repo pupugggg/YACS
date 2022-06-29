@@ -1,50 +1,31 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useSelector, useDispatch } from 'react-redux'
+import {  useNavigate, useParams } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import CssBaseline from '@mui/material/CssBaseline'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import io from 'socket.io-client'
 import hark from 'hark'
+import Stack from '@mui/material/Stack';
 import {
     Box,
-    Button,
     FormControl,
     InputLabel,
     MenuItem,
     Select,
     CardMedia,
-    Grid,
-    Typography,
     Drawer,
     SpeedDial,
     SpeedDialAction,
 } from '@mui/material'
-import MuiAppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
-import List from '@mui/material/List'
-import Divider from '@mui/material/Divider'
-import IconButton from '@mui/material/IconButton'
-import MenuIcon from '@mui/icons-material/Menu'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ListItem from '@mui/material/ListItem'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
-import InboxIcon from '@mui/icons-material/MoveToInbox'
-import MailIcon from '@mui/icons-material/Mail'
 import { styled, useTheme } from '@mui/material/styles'
 import DevicesIcon from '@mui/icons-material/Devices'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import CallIcon from '@mui/icons-material/Call'
-import Accordion from '@mui/material/Accordion'
-import AccordionSummary from '@mui/material/AccordionSummary'
-import AccordionDetails from '@mui/material/AccordionDetails'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
+import Myeditor from './Myeditor'
 function DeviceSelect(props) {
     const [choice, SetChoice] = useState(0)
     //props.type props.onChange props.devices
@@ -95,7 +76,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
 
 const Video = (props) => {
     const ref = useRef()
-    const [videoColor, setVideoColor] = useState('black')
+    const [videoColor, setVideoColor] = useState('white')
     useEffect(() => {
         ref.current.srcObject = props.stream
         const speech = hark(props.stream, {
@@ -106,13 +87,14 @@ const Video = (props) => {
         })
 
         speech.on('stopped_speaking', function () {
-            setVideoColor('black')
+            setVideoColor('white')
         })
     }, [])
 
     return (
         <CardMedia
             sx={{
+                mt:'1%',
                 border: 1,
                 borderRadius: '25px',
                 borderColor: videoColor,
@@ -420,7 +402,7 @@ function Room() {
     }
     const theme = useTheme()
     return (
-        <Box sx={{ minHeight: '200vh' }}>
+        <Box >
             <CssBaseline />
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>{'Select Your Devices'}</DialogTitle>
@@ -447,7 +429,7 @@ function Room() {
             <Box sx={{display:'flex'}}>
                 
 
-                <Main open={openDrawer} sx={{mt:'3%',backgroundColor:'blue',minHeight:'100vh'}}>
+                <Main open={openDrawer} sx={{minHeight:'100vh'}}>
                     <SpeedDial
                 sx={{ position: 'fixed', bottom: 16, right:16,...(openDrawer&&{transitionDuration:'250ms',transform:`translateX(${-(16+drawerWidth)}px)`}) }}
                 ariaLabel="SpeedDial"
@@ -488,7 +470,7 @@ function Room() {
                     />
                 )}
             </SpeedDial>
-            <Box sx={{width:'100%',backgroundColor:'red'}}>wefwef</Box>
+            <Myeditor/>
                 </Main>
                 <Drawer
                     sx={{
@@ -503,6 +485,7 @@ function Room() {
                     anchor="right"
                     open={openDrawer}
                 >
+                    <Stack spacing={2} sx={{padding:'10px'}}>
                       <CardMedia
                         sx={{
                             width: '720',
@@ -512,6 +495,7 @@ function Room() {
                             borderColor: videoColor,
                             borderWidth: '3px',
                         }}
+                        muted
                         playsInline
                         autoPlay
                         component={'video'}
@@ -521,6 +505,7 @@ function Room() {
                     {remoteStreams.map((remoteStream, index) => (
                         <Video key={index} stream={remoteStream} />
                     ))}
+                    </Stack>
                 </Drawer>
             </Box>
         </Box>
