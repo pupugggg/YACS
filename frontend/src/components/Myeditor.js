@@ -1,30 +1,26 @@
-import React, { useState,useCallback } from 'react'
-// Import the Slate editor factory.
-import { createEditor } from 'slate'
-import { Slate, Editable, withReact } from 'slate-react'
-function MyEditor() {
-  const [editor] = useState(() => withReact(createEditor()))
-  const renderElement = useCallback(({ attributes, children, element }) => {
-    switch (element.type) {
-      case 'quote':
-        return <blockquote {...attributes}>{children}</blockquote>
-      case 'link':
-        return (
-          <a {...attributes} href={element.url}>
-            {children}
-          </a>
-        )
-      default:
-        return <p {...attributes}>{children}</p>
+import React, { useState } from 'react'
+import { EditorState,convertToRaw,convertFromRaw } from 'draft-js'
+import { Editor } from 'react-draft-wysiwyg'
+import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css'
+import './App.css'
+const App = () => {
+    const [editorState, setEditorState] = useState(() =>
+        EditorState.createEmpty()
+    )
+    const handleEditorStateChange = (e) => {
+        setEditorState(e)
+        console.log(convertFromRaw(convertToRaw(e.getCurrentContent())))
     }
-  }, [])
-
-  return (
-    // <Slate editor={editor}>
-    //   <Editable renderElement={renderElement} />
-    // </Slate>
-    null
-  )
+    return (
+        <>
+            <Editor
+                editorState={editorState}
+                onEditorStateChange={handleEditorStateChange}
+                wrapperClassName="wrapper-class"
+                editorClassName="editor-class"
+                toolbarClassName="toolbar-class"
+            />
+        </>
+    )
 }
-
-export default MyEditor
+export default App

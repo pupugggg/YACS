@@ -25,7 +25,9 @@ import CallEndIcon from '@mui/icons-material/CallEnd'
 import CallIcon from '@mui/icons-material/Call'
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Myeditor from './Myeditor'
+import useCopyToClipboard from './copyHook'
 function DeviceSelect(props) {
     const [choice, SetChoice] = useState(0)
     //props.type props.onChange props.devices
@@ -111,6 +113,7 @@ const Video = (props) => {
 function Room() {
     let { id } = useParams()
     const navigate = useNavigate()
+    const [copiedText,copy] = useCopyToClipboard()
     const { isError, room } = useSelector((s) => s.room)
     const [videoColor, setVideoColor] = useState('white')
     const [devices, setDevices] = useState(null)
@@ -468,7 +471,14 @@ function Room() {
                         icon={<CallEndIcon sx={{ color: 'red' }} />}
                         tooltipTitle={'Leave The Channel'}
                     />
-                )}
+                  
+                )}  
+                <SpeedDialAction
+                        sx={{ backgroundColor: 'white' }}
+                        onClick={e=>copy(window.location.href)}
+                        icon={<ContentCopyIcon  sx={{ color: 'black' }} />}
+                        tooltipTitle={!copiedText?'Copy':`Copied ${copiedText}`}
+                    />
             </SpeedDial>
             <Myeditor/>
                 </Main>
