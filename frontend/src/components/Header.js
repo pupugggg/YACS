@@ -395,6 +395,14 @@ function Header(props) {
                                         disablePadding
                                         sx={{
                                             cursor: `context-menu`,
+                                            '& :hover':{
+                                                backgroundColor:'white',
+                                                color:'black',
+                                                '& .channelIcon':{
+                                                    
+                                                    color:'black'
+                                                }
+                                            }
                                         }}
                                     >
                                         <Tooltip title="Right Click To Quit the Workspace Permanently">
@@ -406,7 +414,7 @@ function Header(props) {
                                                 }
                                             >
                                                 <ListItemIcon>
-                                                    <LightbulbIcon />
+                                                    <LightbulbIcon className='channelIcon'  />
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={room.name}
