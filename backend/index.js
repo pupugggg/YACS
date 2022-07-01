@@ -8,7 +8,7 @@ const httpServer = createServer(app)
 const mongoose = require('mongoose')
 async function main() {
     await mongoose.mongoose
-        .connect('mongodb://docker:mongopw@localhost:49153')
+        .connect('mongodb://docker:mongopw@mongodb:27017')
         .then(() => console.log('💻 Mondodb Connected'))
         .catch((err) => console.error(err))
     const io = new Server(httpServer, {
@@ -20,7 +20,7 @@ async function main() {
     app.use(express.json())
     app.use(cors())
     app.use(require('./routes/authRoute'))
-    app.use(require('./routes/roomRoute'))
+    app.use('/api/v1/room',require('./routes/roomRoute'))
     const rooms = {}
     const users = {}
     io.on('connection', (socket) => {
@@ -83,6 +83,13 @@ async function main() {
     io.on('connect_error', (err) => {
         console.log(`connect_error due to ${err.message}`)
     })
+    if (!process.env.environment||process.env.environment == 'production') {
+        const root = require('path').join(__dirname, 'build')
+        app.use(express.static(root))
+        app.get('*', (req, res) => {
+            res.sendFile('index.html', { root })
+        })
+    }
     app.use(require('./middlewares/errorHandler'))
     const port = process.env.port || 5000
     httpServer.listen(port, () => {

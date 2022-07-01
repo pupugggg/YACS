@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const {createRoom,getRoomsFromUser,quitRoom,joinRoom} =require('../controllers/roomController')
 const authMiddleware = require('../middlewares/authMiddleware')
-const baseUrl = '/api/v1/room'
+const baseUrl = ''
 router.use(authMiddleware)
 router.route(`${baseUrl}`).post(createRoom)
 router.route(`${baseUrl}`).get(getRoomsFromUser)
