@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import {  useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import CssBaseline from '@mui/material/CssBaseline'
 import Dialog from '@mui/material/Dialog'
@@ -7,7 +7,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import io from 'socket.io-client'
 import hark from 'hark'
-import Stack from '@mui/material/Stack';
+import Stack from '@mui/material/Stack'
 import {
     Box,
     FormControl,
@@ -18,16 +18,21 @@ import {
     Drawer,
     SpeedDial,
     SpeedDialAction,
+    IconButton,
+    ListItemIcon,
+    ListItem,
+    ListItemButton,
+    ListItemText,
 } from '@mui/material'
 import { styled, useTheme } from '@mui/material/styles'
 import DevicesIcon from '@mui/icons-material/Devices'
-import SpeedDialIcon from '@mui/material/SpeedDialIcon';
+import SpeedDialIcon from '@mui/material/SpeedDialIcon'
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import CallIcon from '@mui/icons-material/Call'
-import LinkIcon from '@mui/icons-material/Link';
+import LinkIcon from '@mui/icons-material/Link'
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import Myeditor from './Myeditor'
 import useCopyToClipboard from './copyHook'
 function DeviceSelect(props) {
@@ -58,6 +63,14 @@ function DeviceSelect(props) {
 
 const drawerWidth = 240
 
+const DrawerHeader = styled('div')(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    padding: theme.spacing(0, 1),
+    // necessary for content to be below app bar
+    ...theme.mixins.toolbar,
+    justifyContent: 'flex-end',
+}))
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
     ({ theme, open }) => ({
         flexGrow: 1,
@@ -97,7 +110,7 @@ const Video = (props) => {
     return (
         <CardMedia
             sx={{
-                mt:'1%',
+                mt: '1%',
                 border: 1,
                 borderRadius: '25px',
                 borderColor: videoColor,
@@ -114,7 +127,7 @@ const Video = (props) => {
 function Room() {
     let { id } = useParams()
     const navigate = useNavigate()
-    const [copiedText,copy] = useCopyToClipboard()
+    const [copiedText, copy] = useCopyToClipboard()
     const { isError, room } = useSelector((s) => s.room)
     const [videoColor, setVideoColor] = useState('white')
     const [devices, setDevices] = useState(null)
@@ -259,7 +272,6 @@ function Room() {
         }
         handleGetMedia()
         configSocket()
-        socketRef.current.emit('join', id)
         return () => {
             socketRef.current.close()
         }
@@ -334,14 +346,14 @@ function Room() {
                     selected && selected.videoinput
                         ? selected.videoinput.deviceId
                         : undefined,
-                        width:{
-                            min:150,
-                            max:150
-                        },
-                        height:{
-                            min:150,
-                            max:150,
-                        }
+                width: {
+                    min: 150,
+                    max: 150,
+                },
+                height: {
+                    min: 150,
+                    max: 150,
+                },
             },
         }
         navigator.mediaDevices
@@ -414,7 +426,7 @@ function Room() {
     }
     const theme = useTheme()
     return (
-        <Box >
+        <Box>
             <CssBaseline />
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>{'Select Your Devices'}</DialogTitle>
@@ -437,28 +449,48 @@ function Room() {
                     </Box>
                 </DialogContent>
             </Dialog>
-           
-            <Box sx={{display:'flex'}}>
-                
 
-                <Main open={openDrawer} sx={{minHeight:'100vh'}}>
+            <Box sx={{ display: 'flex' }}>
+                <Main open={openDrawer} sx={{ minHeight: '100vh' }}>
                     <SpeedDial
-                sx={{ position: 'fixed', bottom: 16, right:16,...(openDrawer&&{transitionDuration:'250ms',transform:`translateX(${-(16+drawerWidth)}px)`}) }}
-                ariaLabel="SpeedDial"
-                icon={<SpeedDialIcon />}
-            >
-                {openDrawer?<SpeedDialAction
-                    sx={{ backgroundColor: 'white' }}
-                    onClick={handleDrawerClose}
-                    icon={<KeyboardArrowRightIcon sx={{ color: 'Black' }} />}
-                    tooltipTitle={'Hide Cameras Tab'}
-                />:<SpeedDialAction
-                    sx={{ backgroundColor: 'white' }}
-                    onClick={handleDrawerOpen}
-                    icon={<KeyboardArrowLeftIcon sx={{ color: 'Black' }} />}
-                    tooltipTitle={'Show Camera Tab'}
-                />}
-                {/* {!start && (
+                        sx={{
+                            position: 'fixed',
+                            bottom: 16,
+                            right: 16,
+                            ...(openDrawer && {
+                                transitionDuration: '250ms',
+                                transform: `translateX(${-(
+                                    16 + drawerWidth
+                                )}px)`,
+                            }),
+                        }}
+                        ariaLabel="SpeedDial"
+                        icon={<SpeedDialIcon />}
+                    >
+                        {openDrawer ? (
+                            <SpeedDialAction
+                                sx={{ backgroundColor: 'white' }}
+                                onClick={handleDrawerClose}
+                                icon={
+                                    <KeyboardArrowRightIcon
+                                        sx={{ color: 'Black' }}
+                                    />
+                                }
+                                tooltipTitle={'Hide Cameras Tab'}
+                            />
+                        ) : (
+                            <SpeedDialAction
+                                sx={{ backgroundColor: 'white' }}
+                                onClick={handleDrawerOpen}
+                                icon={
+                                    <KeyboardArrowLeftIcon
+                                        sx={{ color: 'Black' }}
+                                    />
+                                }
+                                tooltipTitle={'Show Camera Tab'}
+                            />
+                        )}
+                        {/* {!start && (
                     <SpeedDialAction
                         sx={{ backgroundColor: 'white' }}
                         onClick={handleClickOpen}
@@ -466,7 +498,7 @@ function Room() {
                         tooltipTitle={'Devices'}
                     />
                 )} */}
-                {/* {!start ? (
+                        {/* {!start ? (
                     <SpeedDialAction
                         sx={{ backgroundColor: 'white' }}
                         onClick={handleStart}
@@ -482,14 +514,16 @@ function Room() {
                     />
                   
                 )}   */}
-                <SpeedDialAction
-                        sx={{ backgroundColor: 'white' }}
-                        onClick={e=>copy(window.location.href)}
-                        icon={<LinkIcon  sx={{ color: 'black' }} />}
-                        tooltipTitle={!copiedText?'Copy':`Copied ${copiedText}`}
-                    />
-            </SpeedDial>
-            <Myeditor/>
+                        <SpeedDialAction
+                            sx={{ backgroundColor: 'white' }}
+                            onClick={(e) => copy(window.location.href)}
+                            icon={<LinkIcon sx={{ color: 'black' }} />}
+                            tooltipTitle={
+                                !copiedText ? 'Copy' : `Copied ${copiedText}`
+                            }
+                        />
+                    </SpeedDial>
+                    <Myeditor />
                 </Main>
                 <Drawer
                     sx={{
@@ -504,26 +538,85 @@ function Room() {
                     anchor="right"
                     open={openDrawer}
                 >
-                    <Stack spacing={2} sx={{padding:'10px'}}>
-                      <CardMedia
-                        sx={{
-                            width: '720',
-                            height: '480',
-                            border: 1,
-                            borderRadius: '25px',
-                            borderColor: videoColor,
-                            borderWidth: '3px',
-                        }}
-                        muted
-                        playsInline
-                        autoPlay
-                        component={'video'}
-                        ref={localVideoRef}
-                    ></CardMedia>
+                    <DrawerHeader>
+                        <ListItem
+                            disablePadding
+                            sx={{
+                                ...(!start && {
+                                    backgroundColor: 'black',
+                                    '& :hover': {
+                                        backgroundColor: 'green',
+                                        '& #callIcon': {
+                                            color: 'black',
+                                        },
+                                    },
+                                }),
 
-                    {remoteStreams.map((remoteStream, index) => (
-                        <Video key={index} stream={remoteStream} />
-                    ))}
+                                ...(start && {
+                                    backgroundColor: 'green',
+                                    '& #callEndIcon': {
+                                        color: 'black',
+                                        display:'none'
+                                    },
+                                    '& :hover': {
+                                        backgroundColor: 'red',
+                                        '& #callIcon': {
+                                            color: 'black',
+                                            display:'none'
+                                        },
+                                        '& #callEndIcon': {
+                                            color: 'black',
+                                            display:'inline'
+                                        },
+                                    },
+                                }),
+                            }}
+                        >
+                            <ListItemButton onClick={handleStart}>
+                                <ListItemIcon>
+                                    {!start ? (
+                                        <CallIcon
+                                            id="callIcon"
+                                            sx={{ color: 'green' }}
+                                        />
+                                    ) : (
+                                        <CallEndIcon
+                                            id="callEndIcon"
+                                            sx={{ color: 'black' }}
+                                        />
+                                    )}
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={
+                                        !start ? 'Join Channel' : 'Connected'
+                                    }
+                                    sx={{
+                                       
+                                    }}
+                                />
+                            </ListItemButton>
+                        </ListItem>
+                    </DrawerHeader>
+                    <Stack spacing={2} sx={{ padding: '10px' }}>
+                        <CardMedia
+                            sx={{
+                                width: '720',
+                                height: '480',
+                                border: 1,
+                                borderRadius: '25px',
+                                borderColor: videoColor,
+                                borderWidth: '3px',
+                            }}
+                            muted
+                            playsInline
+                            autoPlay
+                            component={'video'}
+                            ref={localVideoRef}
+                        ></CardMedia>
+
+                        {remoteStreams.map((remoteStream, index) => (
+                            <Video key={index} stream={remoteStream} />
+                        ))}
                     </Stack>
                 </Drawer>
             </Box>

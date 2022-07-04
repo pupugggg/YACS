@@ -46,7 +46,7 @@ const App = () => {
         const ydoc = new Y.Doc()
         // const persistProvider = new IndexeddbPersistence(id, ydoc)
        const provider = new WebsocketProvider(
-            'ws://signal:1234',
+            'wss://35.77.189.172',
             id,
             ydoc
         )

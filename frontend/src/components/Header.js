@@ -154,10 +154,13 @@ function Header(props) {
         if (user && !user.id) {
             dispatch(getMe())
         }
+        console.log(location.pathname)
         if (location.pathname.startsWith('/room')) {
+            
             const regex = /[^'room/']/g
             const str = location.pathname
-            dispatch(getRoomFromId(str.substring(str.search(regex) - 1)))
+            console.log(str.substring(str.search(regex)))
+            dispatch(getRoomFromId(str.substring(str.search(regex))))
         }
         if (isError) {
             console.log('error')
