@@ -274,6 +274,9 @@ function Room() {
         configSocket()
         return () => {
             socketRef.current.close()
+            stream.current.getTracks().forEach(function(track) {
+                track.stop();
+              });
         }
     }, [id, isError])
     const handleSelect = (value, type) => {
