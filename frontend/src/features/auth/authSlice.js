@@ -17,10 +17,10 @@ export const authSlice = createSlice({
         logout: (state) => {
             localStorage.removeItem('user')
             state.user = null
-            state.isError=false
-            state.isSuccess=false
-            state.isLoading=false
-            state.message= ''
+            state.isError = false
+            state.isSuccess = false
+            state.isLoading = false
+            state.message = ''
             return state
         },
     },

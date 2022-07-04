@@ -18,7 +18,7 @@ authSchema.static('register', async function (data) {
     data.password = hashed
     const result = await this.create(data)
     await roomModel.create({user:result._id})
-    return { token: generateToken(result),id:result._id }
+    return { token: generateToken(result),id:result._id,name:result.username }
 })
 authSchema.static('login', async function (data) {
     const user = await this.findOne({ email: data.email })
@@ -29,7 +29,7 @@ authSchema.static('login', async function (data) {
     if (!passwordMatched) {
         throw new Error('Email or password mismatched')
     }
-    return { token: generateToken(user) ,id:user._id}
+    return { token: generateToken(user) ,id:user._id,name:user.username}
 })
 const authModel = model('auth', authSchema)
 

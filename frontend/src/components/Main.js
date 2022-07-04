@@ -2,7 +2,7 @@ import React from 'react'
 import CssBaseline from '@mui/material/CssBaseline'
 import { Box, Typography, Paper, Button } from '@mui/material'
 import Carousel from 'react-material-ui-carousel'
-import './App.css'
+import './Main.css'
 function Item(props) {
     return (
         <Paper>

@@ -21,8 +21,10 @@ import {
 } from '@mui/material'
 import { styled, useTheme } from '@mui/material/styles'
 import DevicesIcon from '@mui/icons-material/Devices'
+import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import CallEndIcon from '@mui/icons-material/CallEnd'
 import CallIcon from '@mui/icons-material/Call'
+import LinkIcon from '@mui/icons-material/Link';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -58,7 +60,6 @@ const drawerWidth = 240
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
     ({ theme, open }) => ({
-        
         flexGrow: 1,
         padding: theme.spacing(3),
         transition: theme.transitions.create('margin', {
@@ -258,7 +259,7 @@ function Room() {
         }
         handleGetMedia()
         configSocket()
-
+        socketRef.current.emit('join', id)
         return () => {
             socketRef.current.close()
         }
@@ -333,6 +334,14 @@ function Room() {
                     selected && selected.videoinput
                         ? selected.videoinput.deviceId
                         : undefined,
+                        width:{
+                            min:150,
+                            max:150
+                        },
+                        height:{
+                            min:150,
+                            max:150,
+                        }
             },
         }
         navigator.mediaDevices
@@ -436,28 +445,28 @@ function Room() {
                     <SpeedDial
                 sx={{ position: 'fixed', bottom: 16, right:16,...(openDrawer&&{transitionDuration:'250ms',transform:`translateX(${-(16+drawerWidth)}px)`}) }}
                 ariaLabel="SpeedDial"
-                icon={!start ? <CallIcon /> : <CallEndIcon />}
+                icon={<SpeedDialIcon />}
             >
                 {openDrawer?<SpeedDialAction
                     sx={{ backgroundColor: 'white' }}
                     onClick={handleDrawerClose}
                     icon={<KeyboardArrowRightIcon sx={{ color: 'Black' }} />}
-                    tooltipTitle={'Hide Camera'}
+                    tooltipTitle={'Hide Cameras Tab'}
                 />:<SpeedDialAction
                     sx={{ backgroundColor: 'white' }}
                     onClick={handleDrawerOpen}
                     icon={<KeyboardArrowLeftIcon sx={{ color: 'Black' }} />}
-                    tooltipTitle={'Show Camera'}
+                    tooltipTitle={'Show Camera Tab'}
                 />}
-                {!start && (
+                {/* {!start && (
                     <SpeedDialAction
                         sx={{ backgroundColor: 'white' }}
                         onClick={handleClickOpen}
                         icon={<DevicesIcon sx={{ color: 'Black' }} />}
                         tooltipTitle={'Devices'}
                     />
-                )}
-                {!start ? (
+                )} */}
+                {/* {!start ? (
                     <SpeedDialAction
                         sx={{ backgroundColor: 'white' }}
                         onClick={handleStart}
@@ -472,11 +481,11 @@ function Room() {
                         tooltipTitle={'Leave The Channel'}
                     />
                   
-                )}  
+                )}   */}
                 <SpeedDialAction
                         sx={{ backgroundColor: 'white' }}
                         onClick={e=>copy(window.location.href)}
-                        icon={<ContentCopyIcon  sx={{ color: 'black' }} />}
+                        icon={<LinkIcon  sx={{ color: 'black' }} />}
                         tooltipTitle={!copiedText?'Copy':`Copied ${copiedText}`}
                     />
             </SpeedDial>

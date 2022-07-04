@@ -19,7 +19,6 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import InboxIcon from '@mui/icons-material/MoveToInbox'
 import AddBoxIcon from '@mui/icons-material/AddBox'
-import WorkIcon from '@mui/icons-material/Work'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import { Button } from '@mui/material'
 import TextField from '@mui/material/TextField'
@@ -291,7 +290,7 @@ function Header(props) {
                                 component="div"
                                 sx={{ flexGrow: 1 }}
                             >
-                                YACS
+                                {room&&room.name?'Workplace '+room.name:'YACS'}
                             </Typography>
                            
                             <Menu
@@ -341,7 +340,7 @@ function Header(props) {
                         <ListItemIcon>
                                         <PersonIcon />
                                     </ListItemIcon>
-                                <ListItemText primary={'User'} />
+                                <ListItemText primary={'User '+ (user&&user.name?user.name:'')} />
                             </IconButton>
                             <IconButton onClick={handleDrawerClose}>
                                 {theme.direction === 'ltr' ? (
@@ -386,11 +385,11 @@ function Header(props) {
                         <Divider />
                         <List>
                             {rooms && rooms[0] ? (
-                                rooms.map((room, index) => (
+                                rooms.map((roomItem, index) => (
                                     <ListItem
                                         key={index}
                                         onContextMenu={(e) =>
-                                            handleContextMenu(e, room.roomId)
+                                            handleContextMenu(e, roomItem.roomId)
                                         }
                                         disablePadding
                                         sx={{
@@ -402,22 +401,34 @@ function Header(props) {
                                                     
                                                     color:'black'
                                                 }
+                                            },
+                                            ...(room&&room.name === roomItem.name)&&{
+                                                backgroundColor:'white',
+                                                color:'black',
+                                                '& .channelIcon':{
+                                                    
+                                                    color:'black'
+                                                }
                                             }
+                                            
+                                            
+                                            
                                         }}
                                     >
-                                        <Tooltip title="Right Click To Quit the Workspace Permanently">
+                                        <Tooltip title="Right Click to open the options Menu">
                                             <ListItemButton
                                                 onClick={(e) =>
-                                                    navigate(
-                                                        `/room/${room.roomId}`
-                                                    )
+                                                    // navigate(
+                                                    //     `/room/${room.roomId}`
+                                                    // )
+                                                    window.location.assign( `/room/${roomItem.roomId}`)
                                                 }
                                             >
                                                 <ListItemIcon>
                                                     <LightbulbIcon className='channelIcon'  />
                                                 </ListItemIcon>
                                                 <ListItemText
-                                                    primary={room.name}
+                                                    primary={roomItem.name}
                                                 />
                                             </ListItemButton>
                                         </Tooltip>

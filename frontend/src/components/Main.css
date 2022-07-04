@@ -1,20 +1,4 @@
 
-
-  .wrapper-class {
-    padding: 1rem;
-    border: 1px solid #ccc;
-  }
-  .editor-class {
-    background-color:white;
-    color: black;
-    padding: 1rem;
-    border: 1px solid #ccc;
-  }
-  .toolbar-class {
-    border: 1px solid #ccc;
-    color: black;
-  }
-  
   /* Position text in the middle of the page/image */
   .bg-text {
     background-color: rgb(0,0,0); /* Fallback color */
