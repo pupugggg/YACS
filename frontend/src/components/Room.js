@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import { getRoomFromId } from '../features/room/Reducers'
 import CssBaseline from '@mui/material/CssBaseline'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
@@ -18,7 +19,6 @@ import {
     Drawer,
     SpeedDial,
     SpeedDialAction,
-    IconButton,
     ListItemIcon,
     ListItem,
     ListItemButton,
@@ -32,7 +32,6 @@ import CallIcon from '@mui/icons-material/Call'
 import LinkIcon from '@mui/icons-material/Link'
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import Myeditor from './Myeditor'
 import useCopyToClipboard from './copyHook'
 function DeviceSelect(props) {
@@ -127,6 +126,7 @@ const Video = (props) => {
 function Room() {
     let { id } = useParams()
     const navigate = useNavigate()
+    const dispatch = useDispatch()
     const [copiedText, copy] = useCopyToClipboard()
     const { isError, room } = useSelector((s) => s.room)
     const [videoColor, setVideoColor] = useState('white')
@@ -270,15 +270,16 @@ function Room() {
         if (isError) {
             navigate('/')
         }
+        dispatch(getRoomFromId(id))
         handleGetMedia()
         configSocket()
         return () => {
             socketRef.current.close()
-            stream.current.getTracks().forEach(function(track) {
+            stream.current?.getTracks().forEach(function(track) {
                 track.stop();
               });
         }
-    }, [id, isError])
+    }, [id, isError,dispatch])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
         catagorizedDevice[type] = value
@@ -322,6 +323,7 @@ function Room() {
         )
     }
     function gotStream(recievedStream) {
+        if(!recievedStream)return
         stream.current = recievedStream
         localVideoRef.current.srcObject = recievedStream
         const speech = hark(recievedStream, {
