@@ -12,6 +12,9 @@ YACS is a abbreviation of the Yet Another Collabrative System. This project Comb
 
 ## DEMO
 
+[DEMO VIDEO](https://youtu.be/4emDoLAPKLk)
+[![Watch the video](https://i.imgur.com/vKb2F1B.png)](https://youtu.be/4emDoLAPKLk)
+
 [SITE](https://3.115.67.18/)
 
 You can Login with demo account:
@@ -19,8 +22,6 @@ You can Login with demo account:
 | Email        | password |
 |--------------|----------|
 | u1@gmail.com | u1       |
-
-you can go to [SITE](https://3.115.67.18/) directly or click the image below to Watch the demo video on youtube
 
 ## BACKEND & SERVICES
 
@@ -52,7 +53,7 @@ Implemented by using [y-websocket](https://github.com/yjs/y-websocket) to ensure
 
 * YJS
 
-  use [y-quill](https://github.com/yjs/y-quill)
+  Use [y-quill](https://github.com/yjs/y-quill) for document synchornization and rich text editing.
 
 * React
 
