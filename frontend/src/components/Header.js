@@ -29,7 +29,7 @@ import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 import PersonIcon from '@mui/icons-material/Person'
 import Tooltip from '@mui/material/Tooltip'
-import HomeIcon from '@mui/icons-material/Home';
+import HomeIcon from '@mui/icons-material/Home'
 import isEmpty from 'validator/lib/isEmpty'
 import { useDispatch, useSelector } from 'react-redux'
 import { getRoomsFromUser, getRoomFromId } from '../features/room/Reducers'
@@ -41,13 +41,14 @@ import { createRoom, userQuitRoom } from '../features/room/Reducers'
 import { useLocation, useParams } from 'react-router-dom'
 import { MenuItem, Menu } from '@mui/material'
 import { ToastContainer, toast } from 'material-react-toastify'
+import useMediaQuery from '@mui/material/useMediaQuery'
 const drawerWidth = 300
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
     ({ theme, open }) => ({
         marginTop: '3%',
-       
+
         flexGrow: 1,
-        
+
         transition: theme.transitions.create('margin', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
@@ -95,7 +96,8 @@ function Header(props) {
     const navigate = useNavigate()
     const { user, isError } = useSelector((s) => s.auth)
     const { rooms, room } = useSelector((s) => s.room)
-    const [open, setOpen] = React.useState(true)
+    const matches = useMediaQuery(theme.breakpoints.up('md'))
+    const [open, setOpen] = React.useState(matches)
     const [openJoinMenu, setOpenJoinMenu] = React.useState(false)
     const [openCreateMenu, setOpenCreateMenu] = React.useState(false)
 
@@ -151,17 +153,10 @@ function Header(props) {
         ) {
             navigate('/login')
         }
+
         if (user && !user.id) {
             dispatch(getMe())
         }
-        // console.log(location.pathname)
-        // if (location.pathname.startsWith('/room')) {
-        //     console.log(id,'room')
-        //     const regex = /[^'room/']/g
-        //     const str = location.pathname
-        //     console.log(str.substring(str.search(regex)))
-        //     dispatch(getRoomFromId(str.substring(str.search(regex))))
-        // }
         if (isError) {
             console.log('error')
         }
@@ -293,9 +288,11 @@ function Header(props) {
                                 component="div"
                                 sx={{ flexGrow: 1 }}
                             >
-                                {room&&room.name?'Workplace '+room.name:'YACS'}
+                                {room && room.name
+                                    ? 'Workplace ' + room.name
+                                    : 'YACS'}
                             </Typography>
-                           
+
                             <Menu
                                 sx={{ mt: '45px' }}
                                 id="menu-appbar"
@@ -339,11 +336,19 @@ function Header(props) {
                         open={open}
                     >
                         <DrawerHeader>
-                        <IconButton onClick={handleOpenUserMenu} sx={{mr:'auto'}}>
-                        <ListItemIcon>
-                                        <PersonIcon />
-                                    </ListItemIcon>
-                                <ListItemText primary={'User '+ (user&&user.name?user.name:'')} />
+                            <IconButton
+                                onClick={handleOpenUserMenu}
+                                sx={{ mr: 'auto' }}
+                            >
+                                <ListItemIcon>
+                                    <PersonIcon />
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={
+                                        'User ' +
+                                        (user && user.name ? user.name : '')
+                                    }
+                                />
                             </IconButton>
                             <IconButton onClick={handleDrawerClose}>
                                 {theme.direction === 'ltr' ? (
@@ -352,7 +357,6 @@ function Header(props) {
                                     <ChevronRightIcon />
                                 )}
                             </IconButton>
-                    
                         </DrawerHeader>
                         <Divider />
                         <List>
@@ -392,30 +396,29 @@ function Header(props) {
                                     <ListItem
                                         key={index}
                                         onContextMenu={(e) =>
-                                            handleContextMenu(e, roomItem.roomId)
+                                            handleContextMenu(
+                                                e,
+                                                roomItem.roomId
+                                            )
                                         }
                                         disablePadding
                                         sx={{
                                             cursor: `context-menu`,
-                                            '& :hover':{
-                                                backgroundColor:'white',
-                                                color:'black',
-                                                '& .channelIcon':{
-                                                    
-                                                    color:'black'
-                                                }
+                                            '& :hover': {
+                                                backgroundColor: 'white',
+                                                color: 'black',
+                                                '& .channelIcon': {
+                                                    color: 'black',
+                                                },
                                             },
-                                            ...(room&&room.name === roomItem.name)&&{
-                                                backgroundColor:'white',
-                                                color:'black',
-                                                '& .channelIcon':{
-                                                    
-                                                    color:'black'
-                                                }
-                                            }
-                                            
-                                            
-                                            
+                                            ...(room &&
+                                                room.name === roomItem.name && {
+                                                    backgroundColor: 'white',
+                                                    color: 'black',
+                                                    '& .channelIcon': {
+                                                        color: 'black',
+                                                    },
+                                                }),
                                         }}
                                     >
                                         <Tooltip title="Right Click to open the options Menu">
@@ -424,11 +427,13 @@ function Header(props) {
                                                     // navigate(
                                                     //     `/room/${room.roomId}`
                                                     // )
-                                                    window.location.assign( `/room/${roomItem.roomId}`)
+                                                    window.location.assign(
+                                                        `/room/${roomItem.roomId}`
+                                                    )
                                                 }
                                             >
                                                 <ListItemIcon>
-                                                    <LightbulbIcon className='channelIcon'  />
+                                                    <LightbulbIcon className="channelIcon" />
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={roomItem.name}
@@ -454,7 +459,10 @@ function Header(props) {
                                     : undefined
                             }
                         >
-                            <MenuItem sx={{backgroundColor:'red'}} onClick={handleDeleteChannel}>
+                            <MenuItem
+                                sx={{ backgroundColor: 'red' }}
+                                onClick={handleDeleteChannel}
+                            >
                                 Quit Workspace Permanently
                             </MenuItem>
                         </Menu>

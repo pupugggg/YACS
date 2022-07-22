@@ -34,6 +34,7 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import Myeditor from './Myeditor'
 import useCopyToClipboard from './copyHook'
+import useMediaQuery from '@mui/material/useMediaQuery';
 function DeviceSelect(props) {
     const [choice, SetChoice] = useState(0)
     //props.type props.onChange props.devices
@@ -131,6 +132,7 @@ function Room() {
     const { isError, room } = useSelector((s) => s.room)
     const [videoColor, setVideoColor] = useState('white')
     const [devices, setDevices] = useState(null)
+    const theme = useTheme()
     const [open, setOpen] = useState(false)
     const stream = useRef(null)
     const remoteStreamsRef = useRef(new Map())
@@ -267,19 +269,16 @@ function Room() {
         })
     }
     useEffect(() => {
-        if (isError) {
-            navigate('/')
-        }
         dispatch(getRoomFromId(id))
         handleGetMedia()
         configSocket()
         return () => {
             socketRef.current.close()
-            stream.current?.getTracks().forEach(function(track) {
-                track.stop();
-              });
+            stream.current?.getTracks().forEach(function (track) {
+                track.stop()
+            })
         }
-    }, [id, isError,dispatch])
+    }, [id, dispatch])
     const handleSelect = (value, type) => {
         const catagorizedDevice = selected
         catagorizedDevice[type] = value
@@ -323,7 +322,7 @@ function Room() {
         )
     }
     function gotStream(recievedStream) {
-        if(!recievedStream)return
+        if (!recievedStream) return
         stream.current = recievedStream
         localVideoRef.current.srcObject = recievedStream
         const speech = hark(recievedStream, {
@@ -420,7 +419,8 @@ function Room() {
     const handleClose = () => {
         setOpen(false)
     }
-    const [openDrawer, setOpenDrawer] = React.useState(true)
+    const matches = useMediaQuery(theme.breakpoints.up('md'))
+    const [openDrawer, setOpenDrawer] = React.useState(matches)
 
     const handleDrawerOpen = () => {
         setOpenDrawer(true)
@@ -429,7 +429,7 @@ function Room() {
     const handleDrawerClose = () => {
         setOpenDrawer(false)
     }
-    const theme = useTheme()
+    
     return (
         <Box>
             <CssBaseline />
@@ -561,17 +561,17 @@ function Room() {
                                     backgroundColor: 'green',
                                     '& #callEndIcon': {
                                         color: 'black',
-                                        display:'none'
+                                        display: 'none',
                                     },
                                     '& :hover': {
                                         backgroundColor: 'red',
                                         '& #callIcon': {
                                             color: 'black',
-                                            display:'none'
+                                            display: 'none',
                                         },
                                         '& #callEndIcon': {
                                             color: 'black',
-                                            display:'inline'
+                                            display: 'inline',
                                         },
                                     },
                                 }),
@@ -595,9 +595,7 @@ function Room() {
                                     primary={
                                         !start ? 'Join Channel' : 'Connected'
                                     }
-                                    sx={{
-                                       
-                                    }}
+                                    sx={{}}
                                 />
                             </ListItemButton>
                         </ListItem>

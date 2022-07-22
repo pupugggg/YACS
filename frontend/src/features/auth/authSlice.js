@@ -58,6 +58,7 @@ export const authSlice = createSlice({
                     state.isSuccess = false
                     state.message = action.payload
                     state.user = null
+                    localStorage.removeItem('user')
                 }
             )
     },
